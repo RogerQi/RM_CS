@@ -1,0 +1,16 @@
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.pyc
+*.jpg
+*.png
+*.mp4
+*.avi
+*.mov
+*.o
+.ipynb_checkpoints
+build/
