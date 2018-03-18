@@ -3,6 +3,7 @@
 
 #include <mutex>
 #include <vector>
+#include <thread>
 #include <opencv2/opencv.hpp>
 
 using namespace cv;
@@ -42,5 +43,24 @@ protected:
     vector<Mat> _buffer;
     mutex _lock;
 };
+
+class SimpleCVCam: public CameraBase {
+public:
+    SimpleCVCam() : CameraBase() {
+        cap = VideoCapture(0);
+        cap >> _buffer[_read_index];
+        cap >> _buffer[_write_index];
+        std::thread *t = new std::thread(&SimpleCVCam::set_img, this);
+    }
+
+    Mat cam_read() {
+        Mat frame;
+        cap >> frame;
+        return frame;
+    }
+private:
+    VideoCapture cap;
+};
+
 
 #endif
