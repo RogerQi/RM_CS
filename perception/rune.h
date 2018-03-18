@@ -1,5 +1,5 @@
-#ifndef _DETECTION_
-#define _DETECTION_
+#ifndef _RUNE_
+#define _RUNE_
 
 #include "cv_config.h"
 #include <opencv2/opencv.hpp>
