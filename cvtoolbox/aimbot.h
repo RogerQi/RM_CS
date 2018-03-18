@@ -17,7 +17,7 @@ public:
     aimbot();
 
     /**
-     * deconstructor for generic aimbot class;
+     * destructor for generic aimbot class;
      */
      ~aimbot();
 
