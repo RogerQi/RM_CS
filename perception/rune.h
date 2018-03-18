@@ -69,7 +69,7 @@ private:
     void white_binarize();
     void red_binarize();
     void contour_detect();
-    void batch_generat();
+    void batch_generate();
     void digit_recog();
 };
 

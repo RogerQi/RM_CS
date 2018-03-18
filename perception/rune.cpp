@@ -1,8 +1,10 @@
+#include <opencv2/opencv.hpp>
+#include <vector>
+#include <caffe/caffe.hpp>
+#include <caffe/util/io.hpp>
 #include "cv_config.h"
 #include "camera.h"
 #include "rune.h"
-#include <opencv2/opencv.hpp>
-#include <vector>
 
 using namespace std;
 using namespace cv;
@@ -68,6 +70,10 @@ void Rune::contour_detect() {
         imshow("contour detection", debug_img);
         waitKey(1);
     }
+}
+
+void Rune::batch_generate() {
+
 }
 
 bool Rune::get_white_seq(vector<int> &seq) {
