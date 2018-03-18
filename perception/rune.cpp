@@ -1,15 +1,30 @@
+#include <caffe/caffe.hpp>
+#include <caffe/blob.hpp>
+#include <caffe/util/io.hpp>
 #include <opencv2/opencv.hpp>
 #include <vector>
-#include <caffe/caffe.hpp>
-#include <caffe/util/io.hpp>
+#include <cstring>
 #include "cv_config.h"
 #include "camera.h"
 #include "rune.h"
 
+using namespace caffe;
 using namespace std;
 using namespace cv;
 
-Rune::Rune() {}
+Rune::Rune(string net_file, string param_file) {
+#ifdef CPU_ONLY
+    Caffe::set_mode(Caffe::CPU);
+#else
+    Caffe::set_mode(Caffe::GPU);
+    Caffe::SetDevice(0);
+#endif
+    net = new Net<float>(net_file.c_str(), caffe::TEST);
+    net->CopyTrainedLayersFrom(param_file.c_str());
+    input_layer = net->input_blobs()[0];
+    input_layer->Reshape(BATCH_SIZE, 1, DIGIT_SIZE, DIGIT_SIZE);
+    net->Reshape();
+}
 
 Rune::~Rune() {}
 
@@ -25,8 +40,8 @@ void Rune::update(CameraBase *cam) {
 }
 
 void Rune::white_binarize() {
-    cv::cvtColor(raw_img, white_bin, cv::COLOR_BGR2GRAY);
-    cv::GaussianBlur(white_bin, white_bin, Size(3,3), 0);
+    cv::cvtColor(raw_img, gray_img, cv::COLOR_BGR2GRAY);
+    cv::GaussianBlur(gray_img, white_bin, Size(3,3), 0);
     cv::threshold(white_bin, white_bin, 0, 255, cv::THRESH_BINARY+cv::THRESH_OTSU);
     cv::morphologyEx(white_bin, white_bin, cv::MORPH_CLOSE, Mat::ones(4, 8, CV_8UC1));
     if (DEBUG) {
@@ -73,12 +88,49 @@ void Rune::contour_detect() {
 }
 
 void Rune::batch_generate() {
+    int offset = (CROP_SIZE - DIGIT_SIZE) / 2;
+    Mat M;
+    Point2f cnt_points[4];
+    w_digits.clear();
 
+    for (auto cnt: w_contours) {
+        sort(cnt.begin(), cnt.end(), compare_y);
+        if (cnt[0].x > cnt[1].x)
+            swap(cnt[0], cnt[1]);
+        if (cnt[2].x > cnt[3].x)
+            swap(cnt[2], cnt[3]);
+        for (size_t i = 0; i < 4; i++)
+            cnt_points[i] = Point2f(cnt[i]);
+        Mat digit_img;
+        M = cv::getPerspectiveTransform(cnt_points, dst_points);
+        cv::warpPerspective(gray_img, digit_img, M, Size(CROP_SIZE, CROP_SIZE));
+        cv::bitwise_not(digit_img(cv::Rect(offset, offset, DIGIT_SIZE, DIGIT_SIZE)), digit_img);
+        w_digits.push_back(digit_img);
+    }
 }
 
 bool Rune::get_white_seq(vector<int> &seq) {
     white_binarize(); 
     contour_detect();
+    if (w_contours.size() > BATCH_SIZE)
+        return false;
+    batch_generate();
+    
+    seq.clear();
+    input_layer = net->input_blobs()[0];
+#ifdef CPU_ONLY
+    float *input_data = input_layer->mutable_cpu_data();
+#else
+    float *input_data = input_layer->mutable_gpu_data();
+#endif
+    for (auto dig: w_digits) {
+        Mat channel(DIGIT_SIZE, DIGIT_SIZE, CV_32FC1, input_data);
+        dig.convertTo(channel, CV_32FC1);
+        channel /= 255;
+        input_data += CROP_SIZE * CROP_SIZE;
+    }
+    net->Forward();
+    
     return true;
 }
 

@@ -1,6 +1,6 @@
+#include <opencv2/opencv.hpp>
 #include "camera.h"
 #include "rune.h"
-#include <opencv2/opencv.hpp>
 
 int main() {
     auto cam = new SimpleCVCam();

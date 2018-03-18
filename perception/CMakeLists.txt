@@ -25,5 +25,5 @@ else()
     message("Caffe running in GPU Mode")
 endif()
 
-target_link_libraries(single_shot ${OpenCV_LIBS} ${GENERIC_LIBS})
-target_link_libraries(digit_recog ${OpenCV_LIBS} ${GENERIC_LIBS})
+target_link_libraries(single_shot ${OpenCV_LIBS} ${Caffe_LIBRARIES} ${GENERIC_LIBS})
+target_link_libraries(digit_recog ${OpenCV_LIBS} ${Caffe_LIBRARIES} ${GENERIC_LIBS})
