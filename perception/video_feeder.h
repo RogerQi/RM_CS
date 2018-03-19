@@ -18,7 +18,7 @@ public:
         cap = VideoCapture(video_file_name);
         cap >> _buffer[_read_index];
         cap >> _buffer[_write_index];
-        std::thread *t = new std::thread(&VideoFeed::set_img, this);
+        std::thread *t = new std::thread(&VideoFeed::set_img, this, 0);
     }
 
     Mat cam_read() {

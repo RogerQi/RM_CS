@@ -1,5 +1,6 @@
 #include "camera.h"
 #include <thread>
+#include <chrono>
 #include <iostream>
 
 CameraBase::CameraBase() {
@@ -8,7 +9,7 @@ CameraBase::CameraBase() {
     _read_index = 0;
 }
 
-void CameraBase::set_img() {
+void CameraBase::set_img(unsigned int sleep) {
     while (true) {
         _buffer[_write_index] = cam_read(); 
         _lock.lock();
@@ -17,6 +18,8 @@ void CameraBase::set_img() {
         _write_index = _read_index;
         _read_index = tmp_index;
         _lock.unlock();
+        if (sleep)
+            std::this_thread::sleep_for(std::chrono::milliseconds(sleep));
     }
 }
 

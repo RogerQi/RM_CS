@@ -30,7 +30,7 @@ public:
      * excecuted in a seperate thread to increase frame rate
      * and to allow multi camera processing
      */
-    void set_img();
+    void set_img(unsigned int sleep = 0);
 
     /**
      * to be implemented according to the specs of a specific camera
@@ -55,7 +55,7 @@ public:
         cap = VideoCapture(0);
         cap >> _buffer[_read_index];
         cap >> _buffer[_write_index];
-        std::thread *t = new std::thread(&SimpleCVCam::set_img, this);
+        std::thread *t = new std::thread(&SimpleCVCam::set_img, this, 0);
     }
 
     Mat cam_read() {
