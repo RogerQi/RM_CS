@@ -34,11 +34,11 @@ void Rune::update(CameraBase *cam) {
     cam->get_img(raw_img);
     if (raw_img.size() != Size(IMAGE_WIDTH, IMAGE_HEIGHT))
         cv::resize(raw_img, raw_img, Size(IMAGE_WIDTH, IMAGE_HEIGHT));
-    if (DEBUG) {
-        raw_img.copyTo(debug_img);
-        imshow("raw image", raw_img);
-        waitKey(1);
-    }
+#ifdef DEBUG
+    raw_img.copyTo(debug_img);
+    imshow("raw image", raw_img);
+    waitKey(1);
+#endif
 }
 
 void Rune::white_binarize() {
@@ -46,10 +46,10 @@ void Rune::white_binarize() {
     cv::GaussianBlur(gray_img, white_bin, Size(3,3), 0);
     cv::threshold(white_bin, white_bin, 0, 255, cv::THRESH_BINARY+cv::THRESH_OTSU);
     cv::morphologyEx(white_bin, white_bin, cv::MORPH_CLOSE, Mat::ones(4, 8, CV_8UC1));
-    if (DEBUG) {
-        imshow("white digit binarized", white_bin);
-        waitKey(1);
-    }
+#ifdef DEBUG
+    imshow("white digit binarized", white_bin);
+    waitKey(1);
+#endif
 }
 
 bool compare_x(Point &i, Point &j) {
@@ -82,11 +82,11 @@ void Rune::contour_detect() {
                 w_contours.push_back(approx);
         }
     }
-    if (DEBUG) {
-        cv::drawContours(debug_img, w_contours, -1, Scalar(0, 255, 0), 3);
-        imshow("contour detection", debug_img);
-        waitKey(1);
-    }
+#ifdef DEBUG
+    cv::drawContours(debug_img, w_contours, -1, Scalar(0, 255, 0), 3);
+    imshow("contour detection", debug_img);
+    waitKey(1);
+#endif
 }
 
 void Rune::batch_generate() {
@@ -96,7 +96,7 @@ void Rune::batch_generate() {
     w_digits.clear();
     int i = 0;
 
-    for (auto cnt: w_contours) {
+    for (vector<Point> &cnt: w_contours) {
         sort(cnt.begin(), cnt.end(), compare_y);
         if (cnt[0].x > cnt[1].x)
             swap(cnt[0], cnt[1]);
@@ -109,13 +109,6 @@ void Rune::batch_generate() {
         cv::warpPerspective(gray_img, digit_img, M, Size(CROP_SIZE, CROP_SIZE));
         cv::bitwise_not(digit_img(cv::Rect(offset, offset, DIGIT_SIZE, DIGIT_SIZE)), digit_img);
         w_digits.push_back(digit_img);
-        if (DEBUG) {
-            ostringstream ss;
-            ss << "digit " << i;
-            imshow(ss.str().c_str(), digit_img);
-            waitKey(1);
-            i++;
-        }
     }
 }
 
@@ -128,32 +121,40 @@ int argmax(float *data, size_t length) {
     return max_idx;
 }
 
-void Rune::network_inference(vector<pair<Point, int> > &predictions) {
+void Rune::network_inference(vector<pair<int, int> > &predictions) {
 #ifdef CPU_ONLY
     float *input_data = input_layer->mutable_cpu_data();
+    float *output_data = output_layer->mutable_cpu_data();
 #else
     float *input_data = input_layer->mutable_gpu_data();
+    float *output_data = output_layer->mutable_gpu_data();
 #endif
     for (auto dig: w_digits) {
         Mat channel(DIGIT_SIZE, DIGIT_SIZE, CV_32FC1, input_data);
         dig.convertTo(channel, CV_32FC1);
         channel /= 255;
-        input_data += CROP_SIZE * CROP_SIZE;
+        input_data += DIGIT_SIZE * DIGIT_SIZE;
     }
+
     net->Forward();
 
-#ifdef CPU_ONLY
-    float *output_data = output_layer->mutable_cpu_data();
-#else
-    float *output_data = output_layer->mutable_gpu_data();
-#endif
-    
     for (size_t i = 0; i < w_digits.size(); i++) {
         int dig_id = argmax(output_data, output_layer->channels());
-        cout << dig_id << ' ';
         output_data += output_layer->channels();
+        if (dig_id != 10)    // irrelevent class number
+            predictions.push_back(pair<int, int>(i, dig_id));
     }
-    cout << endl;
+#ifdef DEBUG
+    for(auto p: predictions) {
+        int dig_id = p.second;
+        Point loc = w_contours[p.first][0];
+        loc.y -= 20;
+        putText(debug_img, to_string(dig_id), loc, FONT_HERSHEY_SIMPLEX, 0.9,
+                Scalar(0, 150, 100), 2, LINE_AA);
+    }
+    imshow("digit recognition", debug_img);
+    waitKey(1);
+#endif
 }
 
 bool Rune::get_white_seq(vector<int> &seq) {
@@ -163,9 +164,11 @@ bool Rune::get_white_seq(vector<int> &seq) {
         return false;
     batch_generate();
 
-    vector<pair<Point, int> > predictions; 
+    vector<pair<int, int> > predictions; 
     network_inference(predictions);
-
+    if (predictions.size() != 9)
+        return false;
+    
     return true;
 }
 
