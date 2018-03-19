@@ -23,26 +23,26 @@ public:
     /**
      * @brief read an image and copy into src Mat
      * @param dst destination place holder for the stored image
-     * @retval None
+     * @return None
      */
     void get_img(Mat &dst);
 
     /**
      * @brief excecuted in a seperate thread to increase frame rate
      *        and to allow multi camera processing
-     * @retval None
+     * @return None
      */
     void set_img(unsigned int sleep = 0);
 
     /**
      * @brief to be implemented according to the specs of a specific camera
-     * @retval Mat object read directly from the camera
+     * @return Mat object read directly from the camera
      */
     virtual Mat cam_read() = 0;
 
     /**
      * @brief determine if the camera is dead or alive. Should only be of use for video feed
-     * @retval alive flag
+     * @return alive flag
      */
     virtual bool is_alive(void) { return true; }
 protected:

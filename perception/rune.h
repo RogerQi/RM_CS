@@ -37,7 +37,7 @@ public:
      *         function call updates the current frame to the latest image captured from
      *         the camera.
      * @param CameraBase type pointer that has been properly instantiated
-     * @retval None
+     * @return None
      */
     void update(CameraBase *cam);
 
@@ -52,7 +52,7 @@ public:
      *              7   8   9
      *
      * @param an array of integer to be filled with the sequence
-     * @retval flag indicating whether successfully identified exact 9 digits or not
+     * @return flag indicating whether successfully identified exact 9 digits or not
      */
     bool get_white_seq(vector<int> &seq);
     
@@ -63,7 +63,7 @@ public:
      *              1   2   3   4   5
      *
      * @param an array of integer to be filled with the sequence
-     * @retval flag indicating whether successfully indentified exact 5 digits or not
+     * @return flag indicating whether successfully indentified exact 5 digits or not
      */
     bool get_red_seq(vector<int> &seq);
 
@@ -98,7 +98,7 @@ private:
      *                    idx is the corresponding index within the w_contours
      *                    array, and digit_id is the predicted digit number
      *                    for that specific contour location.
-     * @retval None
+     * @return None
      */
     void network_inference(vector<pair<int, int> > &predictions);
 };

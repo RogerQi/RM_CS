@@ -51,9 +51,9 @@ vector<RotatedRect> ir_aimbot::detect_lights(Mat & distilled_color, Mat & gray_b
     return ret;
 }
 
-vector<RotatedRect> ir_aimbot::filter_lights(const Mat & ori_img, const vector<RotatedRect> & detected_light){
+vector<RotatedRect> ir_aimbot::filter_lights(const Mat & orig_img, const vector<RotatedRect> & detected_light){
     vector<RotatedRect> ret;
-    for(const RotatedRect & light : detected_light){
+    for(const RotatedRect &light : detected_light){
         float angle = 0.0f;
         float light_aspect_ratio =
                 std::max(light.size.width, light.size.height) / std::min(light.size.width, light.size.height);
@@ -84,8 +84,8 @@ vector<armor_loc> ir_aimbot::detect_armor(vector<RotatedRect> & filtered_light_b
             float y_offset_sq = pow(light_1.center.y - light_2.center.y, 2);
             float light_dis = sqrt(x_offset_sq + y_offset_sq);
             float x_diff = light_1.center.x - light_2.center.x;
-            if(fabs(x_diff) < 0.000001)
-                x_diff = 0.000001; //to avoid division by zero error
+            if(fabs(x_diff) < 1e-9)
+                x_diff = 1e-9; //to avoid division by zero error
             float bbox_angle = atan((light_1.center.y - light_2.center.y) / x_diff);
             float bbox_x = (light_1.center.x + light_2.center.x) / 2.0;
             float bbox_y = (light_1.center.y + light_2.center.y) / 2.0;
