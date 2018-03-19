@@ -1,10 +1,14 @@
 #ifndef _RUNE_
 #define _RUNE_
 
-#include "cv_config.h"
+#include <caffe/caffe.hpp>
+#include <caffe/util/io.hpp>
+#include <caffe/blob.hpp>
 #include <opencv2/opencv.hpp>
 #include <stdlib.h>
 #include <vector>
+#include <cstring>
+#include "cv_config.h"
 #include "camera.h"
 
 using namespace cv;
@@ -17,9 +21,15 @@ using namespace std;
 #define HW_MIN_RATIO    0.3
 #define HW_MAX_RATIO    0.75
 
+#define BATCH_SIZE      15
+#define CROP_SIZE       32
+#define DIGIT_SIZE      28    
+
+
 class Rune {
 public:
-    Rune();
+    Rune(string net_file = "./model/lenet.prototxt",
+            string param_file = "./model/lenet.caffemodel");
     ~Rune();
 
     /**
@@ -60,17 +70,26 @@ private:
     Mat white_bin;
     Mat red_bin;
     Mat raw_img;
+    Mat gray_img;
     Mat debug_img;
+
+    caffe::Net<float>       *net;
+    caffe::Blob<float>      *input_layer;
+    caffe::Blob<float>      *output_layer;
     vector<Mat>             w_digits;   // white digits in 28x28 gray scale
     vector<Mat>             r_digits;   // red digits in 28x28 gray scale
     vector<vector<Point> >  w_contours; // white contours
     vector<vector<Point> >  r_contours; // red contours
     
+    Point2f dst_points[4] = {Point2f(0, 0), Point2f(CROP_SIZE, 0),
+                        Point2f(0, CROP_SIZE), Point2f(CROP_SIZE, CROP_SIZE)};
+
     void white_binarize();
     void red_binarize();
     void contour_detect();
-    void batch_generat();
+    void batch_generate();
     void digit_recog();
+    void network_inference(vector<pair<Point, int> > &predictions);
 };
 
 #endif
