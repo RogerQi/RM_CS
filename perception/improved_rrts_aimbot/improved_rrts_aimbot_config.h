@@ -21,8 +21,10 @@
 
 /* light detection constraint parameters */
 #define light_bar_kernel_height 3
-#define light_bar_kernel_width  4
-#define light_bar_kernel_iter   1
+#define light_bar_kernel_width  6
+#define gray_bin_kernel_height  1
+#define gray_bin_kernel_width   2
+#define light_bar_kernel_iter   2
 #define light_bar_min_area      4.0
 #define light_max_aspect_ratio  5.0
 #define light_max_angle         30.0

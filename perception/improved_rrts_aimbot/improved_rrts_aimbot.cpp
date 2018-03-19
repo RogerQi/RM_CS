@@ -26,11 +26,12 @@ vector<armor_loc> ir_aimbot::get_hitbox(void){
     distill_color(cur_frame, cur_frame_distilled, my_color);
     threshold(cur_frame_distilled, cur_frame_distilled, my_distillation_threshold, 255, THRESH_BINARY);
     dilate(cur_frame_distilled, cur_frame_distilled, Mat::ones(light_bar_kernel_height, light_bar_kernel_width, CV_8UC1), Point(-1, -1), light_bar_kernel_iter);
+    dilate(cur_frame_gray_binarized, cur_frame_gray_binarized, Mat::ones(gray_bin_kernel_height, gray_bin_kernel_width, CV_8UC1), Point(-1, -1), light_bar_kernel_iter);
     cur_frame_distilled = cur_frame_distilled & cur_frame_gray_binarized;
-    if(DEBUG){
+    #ifdef DEBUG
         imshow("Distilled", cur_frame_distilled);
         waitKey(1);
-    }
+    #endif
     /* end color distillation; cur_frame_distilled should be clean and steady */
     vector<RotatedRect> light_bars = detect_lights(cur_frame_distilled, cur_frame_gray_binarized);
     light_bars = filter_lights(cur_frame, light_bars);
