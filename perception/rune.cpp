@@ -4,6 +4,7 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include <cstring>
+#include <algorithm>
 #include "cv_config.h"
 #include "camera.h"
 #include "rune.h"
@@ -11,6 +12,14 @@
 using namespace caffe;
 using namespace std;
 using namespace cv;
+
+bool cmp_x(Point &i, Point &j) { return i.x < j.x; }
+
+bool cmp_y(Point &i, Point &j) { return i.y < j.y; }
+
+bool cmp_px(pair<Point, int> &i, pair<Point, int> &j) { return i.first.x < j.first.x; }
+
+bool cmp_py(pair<Point, int> &i, pair<Point, int> &j) { return i.first.y < j.first.y; }
 
 Rune::Rune(string net_file, string param_file) {
 #ifdef CPU_ONLY
@@ -52,14 +61,6 @@ void Rune::white_binarize() {
 #endif
 }
 
-bool compare_x(Point &i, Point &j) {
-    return i.x < j.x;
-}
-
-bool compare_y(Point &i, Point &j) {
-    return i.y < j.y;
-}
-
 void Rune::contour_detect() {
     vector<Vec4i>           hierarchy;
     vector<vector<Point> >  contours;
@@ -69,10 +70,10 @@ void Rune::contour_detect() {
     cv::findContours(white_bin, contours, hierarchy,
             cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
     for (auto cnt: contours) {
-        float width = (*max_element(cnt.begin(), cnt.end(), compare_x)).x -
-            (*min_element(cnt.begin(), cnt.end(), compare_x)).x;
-        float height = (*max_element(cnt.begin(), cnt.end(), compare_y)).y -
-            (*min_element(cnt.begin(), cnt.end(), compare_y)).y;
+        float width = (*max_element(cnt.begin(), cnt.end(), cmp_x)).x -
+            (*min_element(cnt.begin(), cnt.end(), cmp_x)).x;
+        float height = (*max_element(cnt.begin(), cnt.end(), cmp_y)).y -
+            (*min_element(cnt.begin(), cnt.end(), cmp_y)).y;
         if (width >= W_CTR_LOW && width <= W_CTR_HIGH && 
                 height >= H_CTR_LOW && height <= H_CTR_HIGH &&
                 height / width >= HW_MIN_RATIO && height / width <= HW_MAX_RATIO) {
@@ -97,7 +98,7 @@ void Rune::batch_generate() {
     int i = 0;
 
     for (vector<Point> &cnt: w_contours) {
-        sort(cnt.begin(), cnt.end(), compare_y);
+        sort(cnt.begin(), cnt.end(), cmp_y);
         if (cnt[0].x > cnt[1].x)
             swap(cnt[0], cnt[1]);
         if (cnt[2].x > cnt[3].x)
@@ -158,7 +159,7 @@ void Rune::network_inference(vector<pair<int, int> > &predictions) {
 }
 
 bool Rune::get_white_seq(vector<int> &seq) {
-    white_binarize(); 
+    white_binarize();
     contour_detect();
     if (w_contours.size() > BATCH_SIZE || w_contours.size() < 9)
         return false;
@@ -169,6 +170,17 @@ bool Rune::get_white_seq(vector<int> &seq) {
     if (predictions.size() != 9)
         return false;
     
+    vector<pair<Point, int> > loc_idx;
+    for (size_t i = 0; i < predictions.size(); i++)
+        loc_idx.push_back(pair<Point, int>(w_contours[predictions[i].first][0], 
+                    predictions[i].second));
+    sort(loc_idx.begin(), loc_idx.end(), cmp_py);
+    sort(loc_idx.begin(), loc_idx.begin()+3, cmp_px);
+    sort(loc_idx.begin()+3, loc_idx.begin()+6, cmp_px);
+    sort(loc_idx.begin()+6, loc_idx.end(), cmp_px);
+
+    for (auto li: loc_idx)
+        seq.push_back(li.second);
     return true;
 }
 
