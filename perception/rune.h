@@ -33,36 +33,37 @@ public:
     ~Rune();
 
     /**
-     * this function should be called before calling any other processing function.
-     * function call updates the current frame to the latest image captured from
-     * the camera.
+     * @brief this function should be called before calling any other processing function.
+     *         function call updates the current frame to the latest image captured from
+     *         the camera.
      * @param CameraBase type pointer that has been properly instantiated
+     * @retval None
      */
     void update(CameraBase *cam);
 
     /**
-     * calculates the white digit sequence according to the current frame
-     * sequence satisfies the following spatial relationship
+     * @brief calculates the white digit sequence according to the current frame
+     *        sequence satisfies the following spatial relationship
      *      
-     *      1   2   3
+     *              1   2   3
      *
-     *      4   5   6
+     *              4   5   6
      *
-     *      7   8   9
+     *              7   8   9
      *
      * @param an array of integer to be filled with the sequence
-     * @return flag indicating whether successfully identified exact 9 digits or not
+     * @retval flag indicating whether successfully identified exact 9 digits or not
      */
     bool get_white_seq(vector<int> &seq);
     
     /**
-     * calculates the red digit sequence according to the current frame
-     * sequence satisfies the following spatial relationship
+     * @brief calculates the red digit sequence according to the current frame
+     *        sequence satisfies the following spatial relationship
      *
-     *      1   2   3   4   5
+     *              1   2   3   4   5
      *
      * @param an array of integer to be filled with the sequence
-     * @return flag indicating whether successfully indentified exact 5 digits or not
+     * @retval flag indicating whether successfully indentified exact 5 digits or not
      */
     bool get_red_seq(vector<int> &seq);
 
@@ -91,12 +92,13 @@ private:
     void digit_recog();
 
     /**
-     * feed in data batch to caffe model and utilize irrelevent class
-     * to filter out incorrect bounding boxes
+     * @brief feed in data batch to caffe model and utilize irrelevent class
+     *        to filter out incorrect bounding boxes
      * @param predictions array of paired data in (idx, digit_id) format where
      *                    idx is the corresponding index within the w_contours
      *                    array, and digit_id is the predicted digit number
      *                    for that specific contour location.
+     * @retval None
      */
     void network_inference(vector<pair<int, int> > &predictions);
 };
