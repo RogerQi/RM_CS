@@ -19,6 +19,14 @@ RotatedRect armor_loc_2_rotated_rect(armor_loc al){
     return ret;
 }
 
+void draw_rotated_rect(Mat & mat_to_draw, RotatedRect rect_to_draw){
+    Point2f rect_points[4];
+    rect_to_draw.points(rect_points);
+    for(int i = 0; i < 4; i++){
+        line(mat_to_draw, rect_points[i], rect_points[(i+1) % 4], Scalar(0, 255, 0), 1, 8);
+    }
+}
+
 ir_aimbot::ir_aimbot(CameraBase * cam_ptr, string color_type_str) : my_cam(cam_ptr){
     my_color = color_type_str;
     my_distillation_threshold = blue_threshold;
@@ -51,6 +59,16 @@ vector<armor_loc> ir_aimbot::get_hitbox(void){
     /* end color distillation; cur_frame_distilled should be clean and steady */
     vector<RotatedRect> light_bars = detect_lights(cur_frame_distilled, cur_frame_gray_binarized);
     light_bars = filter_lights(cur_frame, light_bars);
+    //show captured light bars for debugging
+    #ifdef DEBUG
+        Mat temp_img;
+        cur_frame.copyTo(temp_img);
+        for(const RotatedRect & rect : light_bars){
+            draw_rotated_rect(temp_img, rect);
+        }
+        imshow("Light_bar", temp_img);
+        waitKey(1);
+    #endif
     vector<armor_loc> target_armors = detect_armor(light_bars, cur_frame);
     return filter_armor(target_armors);
 }

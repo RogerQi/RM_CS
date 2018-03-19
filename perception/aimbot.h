@@ -22,6 +22,7 @@ struct armor_loc{
 };
 
 /* Common Functions */
+
 /*
 * @brief Simple template function that return the largest variable of two variables of same type
 * @param a variable of type T
@@ -46,7 +47,14 @@ RotatedRect armor_loc_2_rotated_rect(armor_loc al);
 void distill_color(const Mat & src_img, Mat & dst_img, string color_type);
 
 /**
- * A base class for assisted aiming
+* @brief helper function to draw cv::RotatedRect on Mat
+* @param mat_to_draw image to be modified
+* @param rect_to_draw rotated rectangle to be drawn
+*/
+void draw_rotated_rect(Mat & mat_to_draw, RotatedRect rect_to_draw);
+
+/**
+ * An abstract base class for assisted aiming
  */
 class aimbot{
 public:
