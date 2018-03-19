@@ -9,6 +9,7 @@
 #include <math.h>
 
 using std::string;
+using namespace std;
 
 /**
  * A mod for assisted aiming; inspired by algorithm from DJI RoboRTS
@@ -29,7 +30,7 @@ public:
     * Process image (frame) in current video buffer; pure virtual function to be implemented
     * @return vector of cv::Rect object(s)
     */
-    vector<armor_loc> get_hitbox(void) const;
+    vector<armor_loc> get_hitbox(void);
 
 private:
     CameraBase * my_cam;

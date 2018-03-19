@@ -25,12 +25,12 @@ vector<armor_loc> ir_aimbot::get_hitbox(void){
     threshold(cur_frame_gray_, cur_frame_gray_binarized, gray_threshold, 255, THRESH_BINARY);
     distill_color(cur_frame, cur_frame_distilled, my_color);
     threshold(cur_frame_distilled, cur_frame_distilled, my_distillation_threshold, 255, THRESH_BINARY);
-    dilate(cur_frame_distilled, cur_frame_distilled, Mat::ones(3, 3), 1, CV_8UC1);
+    dilate(cur_frame_distilled, cur_frame_distilled, Mat::ones(3, 3, CV_8UC1));
     cur_frame_distilled = cur_frame_distilled & cur_frame_gray_binarized;
     /* end color distillation; cur_frame_distilled should be clean and steady */
     vector<RotatedRect> light_bars = detect_lights(cur_frame_distilled, cur_frame_gray_binarized);
     light_bars = filter_lights(cur_frame, light_bars);
-    vecotr<armor_loc> target_armors = detect_armor(light_bars, cur_frame);
+    vector<armor_loc> target_armors = detect_armor(light_bars, cur_frame);
     return filter_armor(target_armors);
 }
 
@@ -48,13 +48,13 @@ vector<RotatedRect> ir_aimbot::detect_lights(Mat & distilled_color, Mat & gray_b
 
 vector<RotatedRect> ir_aimbot::filter_lights(const Mat & ori_img, const vector<RotatedRect> & detected_light){
     vector<RotatedRect> ret;
-    for(const RotatedRect & rect : detected_light){
+    for(const RotatedRect & light : detected_light){
         float angle = 0.0f;
         float light_aspect_ratio =
                 std::max(light.size.width, light.size.height) / std::min(light.size.width, light.size.height);
         angle = light.angle >= 90.0 ? std::abs(light.angle - 90.0) : std::abs(light.angle);
-        if (light_aspect_ratio < light_max_aspect_ratio_ ||
-                    angle < light_max_angle_ && light.size.area() >= light_min_area_){
+        if (light_aspect_ratio < light_max_aspect_ratio ||
+                    angle < light_max_angle && light.size.area() >= light_min_area){
             //calculate avg value of the specific channel
             //Mat & this_light_bar = ori_img()
             ret.push_back(light);
@@ -64,7 +64,7 @@ vector<RotatedRect> ir_aimbot::filter_lights(const Mat & ori_img, const vector<R
 }
 
 vector<armor_loc> ir_aimbot::detect_armor(vector<RotatedRect> & filtered_light_bars, const Mat & ori_img){
-    ret = vector<armor_loc>;
+    vector<armor_loc> ret;
     for(size_t i = 0; i < filtered_light_bars.size(); i++){
         RotatedRect light_1 = filtered_light_bars[i];
         for(size_t j = i + 1; j < filtered_light_bars.size(); j++){

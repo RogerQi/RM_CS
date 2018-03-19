@@ -19,13 +19,13 @@ public:
      * constructor for CameraBase class
      */
     CameraBase();
-    
+
     /**
      * read an image and copy into src Mat
      * @param dst destination place holder for the stored image
      */
     void get_img(Mat &dst);
-   
+
     /**
      * excecuted in a seperate thread to increase frame rate
      * and to allow multi camera processing
@@ -37,6 +37,11 @@ public:
      * @return Mat object read directly from the camera
      */
     virtual Mat cam_read() = 0;
+
+    /*
+    * @brief determine if the camera is dead or alive. Should only be of use for video feed
+    */
+    virtual bool is_alive(void) { return true; }
 protected:
     unsigned short _write_index;
     unsigned short  _read_index;

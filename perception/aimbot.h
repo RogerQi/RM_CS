@@ -3,7 +3,9 @@
 
 #include <opencv2/opencv.hpp>
 #include <vector>
+#include <string>
 
+using std::string;
 using namespace cv;
 
 struct armor_loc{
@@ -22,18 +24,22 @@ public:
     /**
      * constructor for generic aimbot class; initialize configuration into memory
      */
-    aimbot();
+    aimbot() {
+        //do nothing
+    }
 
     /**
      * destructor for generic aimbot class;
      */
-     ~aimbot();
+     ~aimbot(){
+         //do nothing
+     }
 
      /**
       * Process image (frame) in current video buffer; pure virtual function to be implemented
       * @return vector of cv::Rect object(s)
       */
-      virtual vector<armor_loc> get_hitbox(void) const = 0;
+      virtual std::vector<armor_loc> get_hitbox(void) = 0;
 
 private:
     /* to be added */
@@ -46,15 +52,6 @@ private:
 * @param dst_img ref to an empty img
 * @param color_type string. It should be either "blue" or "red"
 */
-void distill_color(const Mat & src_img, Mat & dst_img, string color_type) {
-    std::vector<cv::Mat> bgr;
-    cv::split(src_img, bgr);
-    if (color_type == "red") {
-        cv::subtract(bgr[2], bgr[1], dst_img);
-    } else {
-      //assume it's blue
-        cv::subtract(bgr[0], bgr[2], dst_img);
-    }
-}
+void distill_color(const Mat & src_img, Mat & dst_img, string color_type);
 
 #endif
