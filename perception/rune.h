@@ -89,7 +89,16 @@ private:
     void contour_detect();
     void batch_generate();
     void digit_recog();
-    void network_inference(vector<pair<Point, int> > &predictions);
+
+    /**
+     * feed in data batch to caffe model and utilize irrelevent class
+     * to filter out incorrect bounding boxes
+     * @param predictions array of paired data in (idx, digit_id) format where
+     *                    idx is the corresponding index within the w_contours
+     *                    array, and digit_id is the predicted digit number
+     *                    for that specific contour location.
+     */
+    void network_inference(vector<pair<int, int> > &predictions);
 };
 
 #endif
