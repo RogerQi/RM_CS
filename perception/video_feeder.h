@@ -10,6 +10,7 @@
 #include <iostream>
 
 using std::string;
+using namespace cv;
 
 class VideoFeed: public CameraBase {
 public:
@@ -18,7 +19,7 @@ public:
         cap = VideoCapture(video_file_name);
         cap >> _buffer[_read_index];
         cap >> _buffer[_write_index];
-        std::thread *t = new std::thread(&VideoFeed::set_img, this, 0);
+        std::thread *t = new std::thread(&VideoFeed::set_img, this, 10);
     }
 
     Mat cam_read() {
@@ -28,6 +29,7 @@ public:
             //std::cout << "this is the end of the video!!!" << std::endl;
             alive = false;
         }
+        resize(frame, frame, Size(640, 360));
         return frame;
     }
 

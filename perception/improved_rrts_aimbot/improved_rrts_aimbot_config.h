@@ -20,10 +20,13 @@
 #define cnt_mode   cv::RETR_EXTERNAL
 
 /* light detection constraint parameters */
-#define light_bar_min_area     4.0
-#define light_max_aspect_ratio 5.0
-#define light_max_angle        30.0
-#define light_min_area         4.0
+#define light_bar_kernel_height 3
+#define light_bar_kernel_width  4
+#define light_bar_kernel_iter   15
+#define light_bar_min_area      4.0
+#define light_max_aspect_ratio  5.0
+#define light_max_angle         30.0
+#define light_min_area          4.0
 
 /* armpr detection constraint */
 #define light_max_angle_diff   30.0

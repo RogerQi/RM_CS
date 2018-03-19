@@ -7,6 +7,7 @@
 #include <string>
 #include <algorithm>
 #include <math.h>
+#include "cv_config.h"
 
 using std::string;
 using namespace std;
