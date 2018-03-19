@@ -24,6 +24,8 @@ Rune::Rune(string net_file, string param_file) {
     input_layer = net->input_blobs()[0];
     input_layer->Reshape(BATCH_SIZE, 1, DIGIT_SIZE, DIGIT_SIZE);
     net->Reshape();
+    input_layer = net->input_blobs()[0];
+    output_layer = net->output_blobs()[0];
 }
 
 Rune::~Rune() {}
@@ -92,6 +94,7 @@ void Rune::batch_generate() {
     Mat M;
     Point2f cnt_points[4];
     w_digits.clear();
+    int i = 0;
 
     for (auto cnt: w_contours) {
         sort(cnt.begin(), cnt.end(), compare_y);
@@ -106,18 +109,26 @@ void Rune::batch_generate() {
         cv::warpPerspective(gray_img, digit_img, M, Size(CROP_SIZE, CROP_SIZE));
         cv::bitwise_not(digit_img(cv::Rect(offset, offset, DIGIT_SIZE, DIGIT_SIZE)), digit_img);
         w_digits.push_back(digit_img);
+        if (DEBUG) {
+            ostringstream ss;
+            ss << "digit " << i;
+            imshow(ss.str().c_str(), digit_img);
+            waitKey(1);
+            i++;
+        }
     }
 }
 
-bool Rune::get_white_seq(vector<int> &seq) {
-    white_binarize(); 
-    contour_detect();
-    if (w_contours.size() > BATCH_SIZE)
-        return false;
-    batch_generate();
-    
-    seq.clear();
-    input_layer = net->input_blobs()[0];
+int argmax(float *data, size_t length) {
+    int max_idx = 0;
+    for (size_t i = 1; i < length; i++)
+        if (data[i] > data[max_idx])
+            max_idx = i;
+
+    return max_idx;
+}
+
+void Rune::network_inference(vector<pair<Point, int> > &predictions) {
 #ifdef CPU_ONLY
     float *input_data = input_layer->mutable_cpu_data();
 #else
@@ -130,7 +141,31 @@ bool Rune::get_white_seq(vector<int> &seq) {
         input_data += CROP_SIZE * CROP_SIZE;
     }
     net->Forward();
+
+#ifdef CPU_ONLY
+    float *output_data = output_layer->mutable_cpu_data();
+#else
+    float *output_data = output_layer->mutable_gpu_data();
+#endif
     
+    for (size_t i = 0; i < w_digits.size(); i++) {
+        int dig_id = argmax(output_data, output_layer->channels());
+        cout << dig_id << ' ';
+        output_data += output_layer->channels();
+    }
+    cout << endl;
+}
+
+bool Rune::get_white_seq(vector<int> &seq) {
+    white_binarize(); 
+    contour_detect();
+    if (w_contours.size() > BATCH_SIZE || w_contours.size() < 9)
+        return false;
+    batch_generate();
+
+    vector<pair<Point, int> > predictions; 
+    network_inference(predictions);
+
     return true;
 }
 

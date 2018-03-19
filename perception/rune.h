@@ -89,6 +89,7 @@ private:
     void contour_detect();
     void batch_generate();
     void digit_recog();
+    void network_inference(vector<pair<Point, int> > &predictions);
 };
 
 #endif
