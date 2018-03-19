@@ -54,7 +54,7 @@ vector<RotatedRect> ir_aimbot::filter_lights(const Mat & ori_img, const vector<R
                 std::max(light.size.width, light.size.height) / std::min(light.size.width, light.size.height);
         angle = light.angle >= 90.0 ? std::abs(light.angle - 90.0) : std::abs(light.angle);
         if (light_aspect_ratio < light_max_aspect_ratio ||
-                    angle < light_max_angle && light.size.area() >= light_min_area){
+                    (angle < light_max_angle && light.size.area() >= light_min_area)){
             //calculate avg value of the specific channel
             //Mat & this_light_bar = ori_img()
             ret.push_back(light);

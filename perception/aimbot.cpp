@@ -10,3 +10,11 @@ void distill_color(const Mat & src_img, Mat & dst_img, string color_type) {
         cv::subtract(bgr[0], bgr[2], dst_img);
     }
 }
+
+RotatedRect armor_loc_2_rotated_rect(armor_loc al){
+    RotatedRect ret;
+    ret.size = Size2f(al.width, al.height);
+    ret.angle = al.ang;
+    ret.center = Point2f(al.center_x, al.center_y);
+    return ret;
+}

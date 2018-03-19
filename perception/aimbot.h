@@ -16,6 +16,8 @@ struct armor_loc{
     float ang;
 };
 
+RotatedRect armor_loc_2_rotated_rect(armor_loc al);
+
 /**
  * A base class for assisted aiming
  */

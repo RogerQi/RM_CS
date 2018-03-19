@@ -1,5 +1,5 @@
-#ifndef VIDEO_FEEDER_H_
-#define VIDEO_FEEDER_H_
+#ifndef _VIDEO_FEEDER_H_
+#define _VIDEO_FEEDER_H_
 
 #include "camera.h"
 #include <string>
@@ -25,7 +25,7 @@ public:
         Mat frame;
         cap >> frame;
         if(frame.empty()){
-            std::cout << "this is the end of the video!!!" << std::endl;
+            //std::cout << "this is the end of the video!!!" << std::endl;
             alive = false;
         }
         return frame;

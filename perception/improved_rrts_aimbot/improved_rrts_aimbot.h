@@ -32,6 +32,8 @@ public:
     */
     vector<armor_loc> get_hitbox(void);
 
+    inline Mat & get_cur_frame(void) { return cur_frame; }
+
 private:
     CameraBase * my_cam;
 
@@ -45,7 +47,7 @@ private:
     * @brief naive model of detecting light bars with findcontours
     * @param distilled_color
     * @param gray_bin binarized gray img
-    * @return vector of cv::ROtatedRect objects
+    * @return vector of cv::RotatedRect objects
     */
     vector<RotatedRect> detect_lights(Mat & distilled_color, Mat & gray_bin);
 
@@ -53,7 +55,7 @@ private:
     * @brief naive filtering model
     * @param ori_img original image captured by camera
     * @param detect_lights detected light bars pulled from last step
-    * @return vector of cv::ROtatedRect objects
+    * @return vector of cv::RotatedRect objects
     */
     vector<RotatedRect> filter_lights(const Mat & ori_img, const vector<RotatedRect> & detected_light);
 
