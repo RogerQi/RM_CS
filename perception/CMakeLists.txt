@@ -21,7 +21,7 @@ set(SOURCES camera.cpp rune.cpp)
 add_executable(single_shot ${SOURCES} example/single_shot.cpp)
 add_executable(digit_recog ${SOURCES} example/digit_recog.cpp)
 
-set(DETECT_EXAMPLE_SOURCES improved_rrts_aimbot/improved_rrts_aimbot.cpp camera.cpp aimbot.cpp)
+set(DETECT_EXAMPLE_SOURCES camera.cpp aimbot.cpp)
 add_executable(armor_detect ${DETECT_EXAMPLE_SOURCES} example/video_armor_detector.cpp)
 
 if (USE_GPU)
@@ -38,4 +38,4 @@ endif()
 target_link_libraries(single_shot ${OpenCV_LIBS} ${Caffe_LIBRARIES} ${GENERIC_LIBS})
 target_link_libraries(digit_recog ${OpenCV_LIBS} ${Caffe_LIBRARIES} ${GENERIC_LIBS})
 
-target_link_libraries(armor_detect ${OpenCV_LIBS} ${Caffe_LIBRARIES} ${GENERIC_LIBS})
+target_link_libraries(armor_detect ${OpenCV_LIBS} ${GENERIC_LIBS})

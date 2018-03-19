@@ -1,4 +1,4 @@
-#include "improved_rrts_aimbot/improved_rrts_aimbot.h"
+#include "aimbot.h"
 #include "video_feeder.h"
 #include <string>
 #include <iostream>

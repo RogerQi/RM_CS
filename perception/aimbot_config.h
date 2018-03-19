@@ -1,5 +1,5 @@
-#ifndef IMPROVED_RRTS_AIMBOT_CONFIG_H_
-#define IMPROVED_RRTS_AIMBOT_CONFIG_H_
+#ifndef _AIMBOT_CONFIG_H_
+#define _AIMBOT_CONFIG_H_
 
 #include <opencv2/opencv.hpp>
 
