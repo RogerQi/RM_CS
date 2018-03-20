@@ -6,6 +6,7 @@
 #include <string>
 #include <thread>
 #include <mutex>
+#include <cstdint>
 
 /**
  * generic serial communication class for C++
@@ -85,6 +86,12 @@ public:
      * @return number of bytes availble in the buffer
      */
     int bytes_available();
+
+    /**
+     * @brief flush both input & output buffer
+     * @return none
+     */
+    void flush();
 
 private:
     int _fd;

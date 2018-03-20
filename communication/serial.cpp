@@ -114,3 +114,8 @@ int CSerial::bytes_available() {
     ioctl(_fd, FIONREAD, &bytes);
     return bytes;
 }
+
+void CSerial::flush() {
+    tcflush(_fd, TCIOFLUSH);
+    return;
+}

@@ -2,6 +2,7 @@
 #include <iostream>
 #include <time.h>
 #include <unistd.h>
+#include <cstdint>
 
 using namespace std;
 
@@ -13,9 +14,10 @@ int main() {
         w_len = ser->write_bytes("hello\n", 6);
         cout << w_len << " bytes sent" << endl;
         if (ser->bytes_available()) {
-            r_len = ser->read_bytes(buf, sizeof(buf)*sizeof(char));
+            r_len = ser->read_bytes(buf, 4);
+            ser->flush();
             buf[r_len] = 0;
-            cout << r_len << " bytes read:\n" << buf;
+            cout << r_len << " bytes read:\n" << buf << endl;
         }
         else {
             cout << "no bytes available\n";
