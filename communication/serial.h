@@ -24,7 +24,8 @@ public:
      *                      'e': even parity
      *                      's': space parity
      */
-    CSerial(std::string port, int baudrate, int data_bits, int stop_bits, char parity);
+    CSerial(std::string port, int baudrate, 
+            int data_bits = 8, int stop_bits = 1, char parity = 'n');
 
     /**
      * @brief destructor of a CSerial instance

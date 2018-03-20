@@ -31,11 +31,4 @@ endif()
 
 add_subdirectory(perception)
 add_subdirectory(communication)
-
-add_executable(single_shot ./example/single_shot.cpp)
-add_executable(digit_recog ./example/digit_recog.cpp)
-add_executable(armor_detect ./example/video_armor_detector.cpp)
-
-target_link_libraries(single_shot perception)
-target_link_libraries(digit_recog perception)
-target_link_libraries(armor_detect perception)
+add_subdirectory(examples)
