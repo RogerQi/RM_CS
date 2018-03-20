@@ -58,7 +58,8 @@ public:
         cap = VideoCapture(0);
         cap >> _buffer[_read_index];
         cap >> _buffer[_write_index];
-        std::thread *t = new std::thread(&SimpleCVCam::set_img, this, 0);
+        std::thread t(&SimpleCVCam::set_img, this, 0);
+        t.detach();
     }
 
     Mat cam_read() {

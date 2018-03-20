@@ -1,8 +1,8 @@
 #include "serial.h"
 #include <iostream>
 #include <unistd.h>
-#include <termios.h>
 #include <fcntl.h>
+#include <sys/ioctl.h>
 
 using namespace std;
 
@@ -24,6 +24,18 @@ CSerial::CSerial(string port, int baudrate, int data_bits,
         cout << "failed to set " << stop_bits << " stop bits!" << endl;
     if (!set_parity(parity))
         cout << parity << " parity does not exist!" << endl;
+    _termios_options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
+    _termios_options.c_oflag &= ~OPOST;
+    _termios_options.c_iflag = IGNBRK;
+    _termios_options.c_cc[VTIME] = 1;
+    _termios_options.c_cc[VMIN] = 0;
+    if (!tcsetattr(_fd, TCSANOW, &_termios_options))
+        cout << "set attribute error!" << endl;
+}
+
+CSerial::~CSerial() {
+    tcsetattr(_fd, TCSANOW, &_old_termios_options);
+    close(_fd);
 }
 
 bool CSerial::set_baudrate(int baudrate) {
@@ -85,4 +97,20 @@ bool CSerial::set_parity(char parity) {
             return true;
         default: return false;
     }
+}
+
+int CSerial::write_blocking(char *data, int length) {
+    return write(_fd, data, length);
+}
+
+int CSerial::read_blocking(char *data, int length) {
+    if (!bytes_available())
+        return 0;
+    return read(_fd, data, length);
+}
+
+int CSerial::bytes_available() {
+    int bytes;
+    ioctl(_fd, FIONREAD, &bytes);
+    return bytes;
 }

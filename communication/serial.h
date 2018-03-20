@@ -1,8 +1,11 @@
 #ifndef _SERIAL_H_
 #define _SERIAL_H_
 
+#include <time.h>
 #include <termios.h>
 #include <string>
+#include <thread>
+#include <mutex>
 
 /**
  * generic serial communication class for C++
@@ -60,7 +63,27 @@ public:
      */
     bool set_stop_bits(int stop_bits);
 
-    int write(char* data, size_t length);
+    /**
+     * @brief writes to the serial port and block thread
+     * @param data character array
+     * @param length data length
+     * @return number of bytes written successfully
+     */
+    int write_blocking(char* data, int length);
+
+    /**
+     * @brief reads from serial port and store data into buffer
+     * @param data data buffer to store the result
+     * @param length how many bytes to recieve
+     * @return number of bytes read
+     */
+    int read_blocking(char *data, int length);
+
+    /**
+     * @brief number of bytes available in the buffer
+     * @return number of bytes availble in the buffer
+     */
+    int bytes_available();
 
 private:
     int _fd;
