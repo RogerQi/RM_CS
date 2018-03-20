@@ -29,7 +29,7 @@ public:
             //std::cout << "this is the end of the video!!!" << std::endl;
             alive = false;
         }
-        resize(frame, frame, Size(640, 360));
+        //resize(frame, frame, Size(640, 360));
         return frame;
     }
 

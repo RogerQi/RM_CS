@@ -54,6 +54,24 @@ void distill_color(const Mat & src_img, Mat & dst_img, string color_type);
 void draw_rotated_rect(Mat & mat_to_draw, RotatedRect rect_to_draw);
 
 /**
+* @brief helper function to calculate aspect ratio (y offset is considered height)
+* @param light a rotatedrect object (usually a light bar)
+* @return aspect ratio
+*/
+float _cal_aspect_ratio(RotatedRect light);
+
+/**
+* @brief get POI with respect to original image size (for cropping)
+* @param crop_distilled preprocessed image
+*/
+Point2f _get_point_of_interest(const Mat & crop_distilled);
+
+/**
+* @brief dynamically crop image
+*/
+Mat _image_cropper(const Mat & frame, Point2f poi);
+
+/*
  * An abstract base class for assisted aiming
  */
 class aimbot{
@@ -116,12 +134,19 @@ private:
     int my_distillation_threshold;
 
     /**
+    * @brief preprocess frame with magical methods
+    * @param cur_frame_distilled ref to return value
+    * @param cur_frame original image
+    */
+    void preprocess_frame(Mat & cur_frame_distilled, const Mat & cur_frame, Mat color_kernel, Mat gray_kernel);
+
+    /**
     * @brief naive model of detecting light bars with findcontours
     * @param distilled_color
     * @param gray_bin binarized gray img
     * @return vector of cv::RotatedRect objects
     */
-    vector<RotatedRect> detect_lights(Mat & distilled_color, Mat & gray_bin);
+    vector<RotatedRect> detect_lights(Mat & distilled_color);
 
     /**
     * @brief naive filtering model

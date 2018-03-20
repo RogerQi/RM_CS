@@ -6,7 +6,7 @@ void distill_color(const Mat & src_img, Mat & dst_img, string color_type) {
     if (color_type == "red") {
         cv::subtract(bgr[2], bgr[1], dst_img);
     } else {
-      //assume it's blue
+        //assume it's blue
         cv::subtract(bgr[0], bgr[2], dst_img);
     }
 }
@@ -27,6 +27,83 @@ void draw_rotated_rect(Mat & mat_to_draw, RotatedRect rect_to_draw){
     }
 }
 
+float _cal_aspect_ratio(RotatedRect light){
+    Point2f * rect_points = new Point2f[4];
+    light.points(rect_points); //from opencv documentation: [bottomLeft, topLeft, topRight, bottomRight]
+    sort(rect_points, rect_points + 4,
+                [](const Point2f & a, const Point2f & b) {return a.x < b.x; });
+    float width = rect_points[3].x - rect_points[0].x;
+    sort(rect_points, rect_points + 4,
+                [](const Point2f & a, const Point2f & b) {return a.y < b.y; });
+    float height = rect_points[3].y - rect_points[0].y;
+    delete[] rect_points;
+    return height / width;
+    /*
+    float height = sqrt(pow(rect_points[1].x - rect_points[0].x, 2)
+                                + pow(rect_points[1].y - rect_points[0].y, 2));
+    float width = sqrt(pow(rect_points[1].x - rect_points[2].x, 2)
+                                + pow(rect_points[1].y - rect_points[2].y, 2));
+    return height / width;
+    */
+}
+
+Point2f _get_point_of_interest(const Mat & crop_distilled){
+    vector<vector<Point> > contours;
+    vector<Vec4i> hierarchy;
+    Point2f middle_pt(ORIG_IMAGE_WIDTH * 1.0 / 2, ORIG_IMAGE_HEIGHT * 1.0 / 2);
+    findContours(crop_distilled, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
+    if(contours.size() == 0){
+        //no contours are found
+        return middle_pt;
+    }
+    vector<Moments> mu(contours.size());
+    for(int i = 0; i < contours.size(); i++){
+        mu[i] = moments( contours[i], false );
+    }
+
+    ///  Get the mass centers:
+    vector<Point2f> mc( contours.size() );
+    for( int i = 0; i < contours.size(); i++ ){
+        mc[i] = Point2f( mu[i].m10/mu[i].m00 , mu[i].m01/mu[i].m00 );
+    }
+    float dw = ORIG_IMAGE_WIDTH * 1.0 / crop_distilled.cols;
+    float dh = ORIG_IMAGE_HEIGHT * 1.0 / crop_distilled.rows;
+    Point2f nearest_pt = mc[0];
+    float nearest_distance = sqrt(pow(nearest_pt.x - middle_pt.x, 2) + pow(nearest_pt.y - middle_pt.y, 2));
+    for(const Point2f pt : mc){
+        float cur_distance = sqrt(pow(pt.x - middle_pt.x, 2) + pow(pt.y - middle_pt.y, 2));
+        if(cur_distance < nearest_distance){
+            nearest_pt = pt;
+            nearest_distance = cur_distance;
+        }
+    }
+    nearest_pt.x *= dw;
+    nearest_pt.y *= dh;
+    return nearest_pt;
+}
+
+Mat _image_cropper(const Mat & frame, Point2f poi){
+    int lower_y = poi.y - IMAGE_HEIGHT / 2.0; //may be negative
+    int upper_y = lower_y + IMAGE_HEIGHT; //may be overflow
+    int left_x = poi.x - IMAGE_WIDTH / 2.0; //may be negative
+    int right_x = left_x + IMAGE_WIDTH; //may be overflow
+    Mat ret(IMAGE_HEIGHT, IMAGE_WIDTH, CV_8UC3);
+    for(int x = left_x; x < right_x; x++){
+        int new_x = x - left_x;
+        for(int y = lower_y; y < upper_y; y++){
+            int new_y = y - lower_y;
+            if(x < 0 || x >= ORIG_IMAGE_WIDTH || y < 0 || y >= ORIG_IMAGE_HEIGHT){
+                //x or y is out of bound
+                Vec3b color(0, 0, 0);
+                ret.at<Vec3b>(Point(new_x, new_y)) = color;
+            }
+            Vec3b color = frame.at<Vec3b>(Point(x, y));
+            ret.at<Vec3b>(Point(new_x, new_y)) = color;
+        }
+    }
+    return ret;
+}
+
 ir_aimbot::ir_aimbot(CameraBase * cam_ptr, string color_type_str) : my_cam(cam_ptr){
     my_color = color_type_str;
     my_distillation_threshold = blue_threshold;
@@ -39,25 +116,45 @@ ir_aimbot::~ir_aimbot(){
     //delete my_cam;
 }
 
-vector<armor_loc> ir_aimbot::get_hitbox(void){
-    //get cur image from camera
-    Mat cur_frame_gray_, cur_frame_gray_binarized, cur_frame_distilled;
-    my_cam->get_img(cur_frame);
-    //preprocess cur frame such that we get a black and white copy
-    /* begin color distillation; pulled from RoboRTS */
+void ir_aimbot::preprocess_frame(Mat & cur_frame_distilled, const Mat & cur_frame, Mat color_kernel, Mat gray_kernel){
+    Mat cur_frame_gray_, cur_frame_gray_binarized;
     cvtColor(cur_frame, cur_frame_gray_, COLOR_BGR2GRAY);
     threshold(cur_frame_gray_, cur_frame_gray_binarized, gray_threshold, 255, THRESH_BINARY);
     distill_color(cur_frame, cur_frame_distilled, my_color);
     threshold(cur_frame_distilled, cur_frame_distilled, my_distillation_threshold, 255, THRESH_BINARY);
-    dilate(cur_frame_distilled, cur_frame_distilled, Mat::ones(light_bar_kernel_height, light_bar_kernel_width, CV_8UC1), Point(-1, -1), light_bar_kernel_iter);
-    dilate(cur_frame_gray_binarized, cur_frame_gray_binarized, Mat::ones(gray_bin_kernel_height, gray_bin_kernel_width, CV_8UC1), Point(-1, -1), light_bar_kernel_iter);
+    dilate(cur_frame_distilled, cur_frame_distilled, color_kernel, Point(-1, -1), 1);
+    dilate(cur_frame_gray_binarized, cur_frame_gray_binarized, gray_kernel, Point(-1, -1), 1);
     cur_frame_distilled = cur_frame_distilled & cur_frame_gray_binarized;
+}
+
+vector<armor_loc> ir_aimbot::get_hitbox(void){
+    //get cur image from camera
+    Mat cur_frame_distilled;
+    my_cam->get_img(cur_frame);
+    Mat crop_detect, crop_distilled;
+    resize(cur_frame, crop_detect, Size(320, 180));
+    preprocess_frame(crop_distilled, crop_detect, Mat::ones(10, 10, CV_8UC1), Mat::ones(12, 12, CV_8UC1));
+    #ifdef DEBUG
+        imshow("Crop_Distilled", crop_distilled);
+        waitKey(1);
+    #endif
+    Point2f poi = _get_point_of_interest(crop_distilled);
+    std::cout << "Poi: " << poi.x << " " << poi.y << std::endl;
+    /* process cur_frame (cropping) */
+    cur_frame = _image_cropper(cur_frame, poi);
+    //resize(cur_frame, cur_frame, Size(640, 360));
+    //preprocess cur frame such that we get a black and white copy
+    //GaussianBlur(cur_frame, cur_frame, Size(1, 1), 0);
+    /* begin color distillation; pulled from RoboRTS */
+    preprocess_frame(cur_frame_distilled, cur_frame,
+            Mat::ones(light_bar_kernel_height, light_bar_kernel_width, CV_8UC1),
+            Mat::ones(gray_bin_kernel_height, gray_bin_kernel_width, CV_8UC1));
     #ifdef DEBUG
         imshow("Distilled", cur_frame_distilled);
         waitKey(1);
     #endif
     /* end color distillation; cur_frame_distilled should be clean and steady */
-    vector<RotatedRect> light_bars = detect_lights(cur_frame_distilled, cur_frame_gray_binarized);
+    vector<RotatedRect> light_bars = detect_lights(cur_frame_distilled);
     light_bars = filter_lights(cur_frame, light_bars);
     //show captured light bars for debugging
     #ifdef DEBUG
@@ -73,11 +170,11 @@ vector<armor_loc> ir_aimbot::get_hitbox(void){
     return filter_armor(target_armors);
 }
 
-vector<RotatedRect> ir_aimbot::detect_lights(Mat & distilled_color, Mat & gray_bin){
+vector<RotatedRect> ir_aimbot::detect_lights(Mat & distilled_color){
     vector<vector<Point> > light_contours, gray_contours;
     vector<Vec4i> light_hierarchy, gray_hierarchy;
     findContours(distilled_color, light_contours, light_hierarchy, cnt_mode, cnt_method);
-    findContours(gray_bin, gray_contours, gray_hierarchy, cnt_mode, cnt_method);
+    //findContours(gray_bin, gray_contours, gray_hierarchy, cnt_mode, cnt_method);
     vector<RotatedRect> ret;
     for(const vector<Point> & cnt : light_contours){
         ret.push_back(minAreaRect(cnt));
@@ -89,11 +186,11 @@ vector<RotatedRect> ir_aimbot::filter_lights(const Mat & orig_img, const vector<
     vector<RotatedRect> ret;
     for(const RotatedRect &light : detected_light){
         float angle = 0.0f;
-        float light_aspect_ratio =
-                std::max(light.size.width, light.size.height) / std::min(light.size.width, light.size.height);
+        float light_aspect_ratio = _cal_aspect_ratio(light);
         angle = light.angle >= 90.0 ? std::abs(light.angle - 90.0) : std::abs(light.angle);
-        if (light_aspect_ratio < light_max_aspect_ratio ||
-                    (angle < light_max_angle && light.size.area() >= light_min_area)){
+        //std::cout << "current light bar ratio" << light_aspect_ratio << std::endl;
+        if ((light_aspect_ratio < light_max_aspect_ratio && light_aspect_ratio > light_min_apsect_ratio) &&
+                    (light.size.area() >= light_min_area)){
             //calculate avg value of the specific channel
             //Mat & this_light_bar = ori_img()
             ret.push_back(light);
@@ -124,9 +221,9 @@ vector<armor_loc> ir_aimbot::detect_armor(vector<RotatedRect> & filtered_light_b
             float bbox_x = (light_1.center.x + light_2.center.x) / 2.0;
             float bbox_y = (light_1.center.y + light_2.center.y) / 2.0;
             float bbox_w = light_dis * 1.2;
-            if(fabs(bbox_angle) < armor_max_angle){
-                if((bbox_w / bbox_h) < armor_max_aspect_ratio){
-                    if((bbox_w * bbox_h) > armor_min_area){
+            if(fabs(bbox_angle) < armor_max_angle){ //constraint 1: armor angle
+                if((bbox_w / bbox_h) < armor_max_aspect_ratio){ //constraint 2: armor aspect ratio
+                    if((bbox_w * bbox_h) > armor_min_area){ //constraint 3: armor can't be too small
                         armor_loc this_armor;
                         this_armor.center_x = bbox_x;
                         this_armor.center_y = bbox_y;
