@@ -30,6 +30,7 @@ if (DEBUG)
 endif()
 
 add_subdirectory(perception)
+add_subdirectory(communication)
 
 add_executable(single_shot ./example/single_shot.cpp)
 add_executable(digit_recog ./example/digit_recog.cpp)

@@ -14,3 +14,4 @@ Thumbs.db
 *.o
 .ipynb_checkpoints
 build/
+compile_commands.json
