@@ -24,7 +24,7 @@ int main(void){
             ellipse(frame_shower, visual_rects[i], color, 2, 8);
             //std::cout << "Cur armor center: (" << ret[i].center_x << ", " << ret[i].center_y << ")" << std::endl;
         }
-        //imshow("Go", frame_shower);
+        imshow("Go", frame_shower);
         waitKey(1);
     }
     return 0;

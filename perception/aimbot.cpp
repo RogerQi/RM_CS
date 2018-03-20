@@ -58,13 +58,13 @@ Point2f _get_point_of_interest(const Mat & crop_distilled){
     }
     vector<Moments> mu(contours.size());
     for(int i = 0; i < contours.size(); i++){
-        mu[i] = moments( contours[i], false );
+        mu[i] = moments(contours[i], false);
     }
 
     ///  Get the mass centers:
     vector<Point2f> mc( contours.size() );
     for( int i = 0; i < contours.size(); i++ ){
-        mc[i] = Point2f( mu[i].m10/mu[i].m00 , mu[i].m01/mu[i].m00 );
+        mc[i] = Point2f(mu[i].m10/mu[i].m00 , mu[i].m01/mu[i].m00);
     }
     float dw = ORIG_IMAGE_WIDTH * 1.0 / crop_distilled.cols;
     float dh = ORIG_IMAGE_HEIGHT * 1.0 / crop_distilled.rows;
@@ -96,9 +96,10 @@ Mat _image_cropper(const Mat & frame, Point2f poi){
                 //x or y is out of bound
                 Vec3b color(0, 0, 0);
                 ret.at<Vec3b>(Point(new_x, new_y)) = color;
+            } else {
+                Vec3b color = frame.at<Vec3b>(Point(x, y));
+                ret.at<Vec3b>(Point(new_x, new_y)) = color;
             }
-            Vec3b color = frame.at<Vec3b>(Point(x, y));
-            ret.at<Vec3b>(Point(new_x, new_y)) = color;
         }
     }
     return ret;
@@ -133,26 +134,22 @@ vector<armor_loc> ir_aimbot::get_hitbox(void){
     my_cam->get_img(cur_frame);
     Mat crop_detect, crop_distilled;
     resize(cur_frame, crop_detect, Size(320, 180));
+    #ifdef DEBUG
+        imshow("Go1", crop_detect);
+        waitKey(1);
+    #endif
     preprocess_frame(crop_distilled, crop_detect, Mat::ones(10, 10, CV_8UC1), Mat::ones(12, 12, CV_8UC1));
     #ifdef DEBUG
         imshow("Crop_Distilled", crop_distilled);
         waitKey(1);
     #endif
     Point2f poi = _get_point_of_interest(crop_distilled);
-    std::cout << "Poi: " << poi.x << " " << poi.y << std::endl;
     /* process cur_frame (cropping) */
     cur_frame = _image_cropper(cur_frame, poi);
-    //resize(cur_frame, cur_frame, Size(640, 360));
-    //preprocess cur frame such that we get a black and white copy
-    //GaussianBlur(cur_frame, cur_frame, Size(1, 1), 0);
     /* begin color distillation; pulled from RoboRTS */
     preprocess_frame(cur_frame_distilled, cur_frame,
             Mat::ones(light_bar_kernel_height, light_bar_kernel_width, CV_8UC1),
             Mat::ones(gray_bin_kernel_height, gray_bin_kernel_width, CV_8UC1));
-    #ifdef DEBUG
-        imshow("Distilled", cur_frame_distilled);
-        waitKey(1);
-    #endif
     /* end color distillation; cur_frame_distilled should be clean and steady */
     vector<RotatedRect> light_bars = detect_lights(cur_frame_distilled);
     light_bars = filter_lights(cur_frame, light_bars);

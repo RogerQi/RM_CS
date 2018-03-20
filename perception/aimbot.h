@@ -21,7 +21,7 @@ struct armor_loc{
     float ang;
 };
 
-/* Common Functions */
+    /* Common Functions */
 
 /*
 * @brief Simple template function that return the largest variable of two variables of same type
@@ -72,33 +72,32 @@ Point2f _get_point_of_interest(const Mat & crop_distilled);
 Mat _image_cropper(const Mat & frame, Point2f poi);
 
 /*
- * An abstract base class for assisted aiming
- */
+* An abstract base class for assisted aiming
+*/
 class aimbot{
 public:
     /**
-     * constructor for generic aimbot class; initialize configuration into memory
-     */
+    * constructor for generic aimbot class; initialize configuration into memory
+    */
     aimbot() {
         //do nothing
     }
 
     /**
-     * destructor for generic aimbot class;
-     */
-     ~aimbot(){
-         //do nothing
-     }
+    * destructor for generic aimbot class;
+    */
+    ~aimbot(){
+        //do nothing
+    }
 
-     /**
-      * Process image (frame) in current video buffer; pure virtual function to be implemented
-      * @return vector of cv::Rect object(s)
-      */
-      virtual std::vector<armor_loc> get_hitbox(void) = 0;
+    /**
+    * Process image (frame) in current video buffer; pure virtual function to be implemented
+    * @return vector of cv::Rect object(s)
+    */
+    virtual std::vector<armor_loc> get_hitbox(void) = 0;
 
 private:
     /* to be added */
-
 };
 
 /**
@@ -107,8 +106,8 @@ private:
 class ir_aimbot: public aimbot{
 public:
     /**
-     * constructor; initialize configuration into memory
-     */
+    * constructor; initialize configuration into memory
+    */
     ir_aimbot(CameraBase * cam_ptr, string color_type_str);
 
     /**
