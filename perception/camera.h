@@ -23,14 +23,14 @@ public:
     /**
      * @brief read an image and copy into src Mat
      * @param dst destination place holder for the stored image
-     * @return None
+     * @return none
      */
     void get_img(Mat &dst);
 
     /**
      * @brief excecuted in a seperate thread to increase frame rate
      *        and to allow multi camera processing
-     * @return None
+     * @return none
      */
     void set_img(unsigned int sleep = 0);
 

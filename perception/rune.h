@@ -37,7 +37,7 @@ public:
      *         function call updates the current frame to the latest image captured from
      *         the camera.
      * @param CameraBase type pointer that has been properly instantiated
-     * @return None
+     * @return none
      */
     void update(CameraBase *cam);
 
@@ -98,7 +98,7 @@ private:
      *                    idx is the corresponding index within the w_contours
      *                    array, and digit_id is the predicted digit number
      *                    for that specific contour location.
-     * @return None
+     * @return none
      */
     void network_inference(vector<pair<int, int> > &predictions);
 };
