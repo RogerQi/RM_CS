@@ -70,7 +70,7 @@ public:
      * @param length data length
      * @return number of bytes written successfully
      */
-    int write_bytes(char* data, int length);
+    int write_bytes(const char* data, int length);
 
     /**
      * @brief reads from serial port and store data into buffer

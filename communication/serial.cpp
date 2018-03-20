@@ -99,7 +99,7 @@ bool CSerial::set_parity(char parity) {
     }
 }
 
-int CSerial::write_bytes(char *data, int length) {
+int CSerial::write_bytes(const char *data, int length) {
     return write(_fd, data, length);
 }
 

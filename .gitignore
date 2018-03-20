@@ -15,3 +15,5 @@ Thumbs.db
 .ipynb_checkpoints
 build/
 compile_commands.json
+html/
+latex/
