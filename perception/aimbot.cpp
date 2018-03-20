@@ -11,14 +11,6 @@ void distill_color(const Mat & src_img, Mat & dst_img, string color_type) {
     }
 }
 
-RotatedRect armor_loc_2_rotated_rect(armor_loc al){
-    RotatedRect ret;
-    ret.size = Size2f(al.width, al.height);
-    ret.angle = al.ang;
-    ret.center = Point2f(al.center_x, al.center_y);
-    return ret;
-}
-
 void draw_rotated_rect(Mat & mat_to_draw, RotatedRect rect_to_draw){
     Point2f rect_points[4];
     rect_to_draw.points(rect_points);
@@ -128,7 +120,7 @@ void ir_aimbot::preprocess_frame(Mat & cur_frame_distilled, const Mat & cur_fram
     cur_frame_distilled = cur_frame_distilled & cur_frame_gray_binarized;
 }
 
-vector<armor_loc> ir_aimbot::get_hitbox(void){
+vector<RotatedRect> ir_aimbot::get_hitbox(void){
     //get cur image from camera
     Mat cur_frame_distilled;
     my_cam->get_img(cur_frame);
@@ -163,7 +155,7 @@ vector<armor_loc> ir_aimbot::get_hitbox(void){
         imshow("Light_bar", temp_img);
         waitKey(1);
     #endif
-    vector<armor_loc> target_armors = detect_armor(light_bars, cur_frame);
+    vector<RotatedRect> target_armors = detect_armor(light_bars, cur_frame);
     return filter_armor(target_armors);
 }
 
@@ -196,8 +188,8 @@ vector<RotatedRect> ir_aimbot::filter_lights(const Mat & orig_img, const vector<
     return ret;
 }
 
-vector<armor_loc> ir_aimbot::detect_armor(vector<RotatedRect> & filtered_light_bars, const Mat & ori_img){
-    vector<armor_loc> ret;
+vector<RotatedRect> ir_aimbot::detect_armor(vector<RotatedRect> & filtered_light_bars, const Mat & ori_img){
+    vector<RotatedRect> ret;
     for(size_t i = 0; i < filtered_light_bars.size(); i++){
         RotatedRect light_1 = filtered_light_bars[i];
         for(size_t j = i + 1; j < filtered_light_bars.size(); j++){
@@ -221,12 +213,10 @@ vector<armor_loc> ir_aimbot::detect_armor(vector<RotatedRect> & filtered_light_b
             if(fabs(bbox_angle) < armor_max_angle){ //constraint 1: armor angle
                 if((bbox_w / bbox_h) < armor_max_aspect_ratio){ //constraint 2: armor aspect ratio
                     if((bbox_w * bbox_h) > armor_min_area){ //constraint 3: armor can't be too small
-                        armor_loc this_armor;
-                        this_armor.center_x = bbox_x;
-                        this_armor.center_y = bbox_y;
-                        this_armor.ang = bbox_angle;
-                        this_armor.width = bbox_w;
-                        this_armor.height = bbox_h;
+                        RotatedRect this_armor;
+                        this_armor.center = Point2f(bbox_x, bbox_y);
+                        this_armor.size = Size2f(bbox_w, bbox_h);
+                        this_armor.angle = bbox_angle;
                         ret.push_back(this_armor);
                     }
                 }
@@ -236,7 +226,7 @@ vector<armor_loc> ir_aimbot::detect_armor(vector<RotatedRect> & filtered_light_b
     return ret;
 }
 
-vector<armor_loc> ir_aimbot::filter_armor(const vector<armor_loc> & armor_obtained){
+vector<RotatedRect> ir_aimbot::filter_armor(const vector<RotatedRect> & armor_obtained){
     //do nothing yet
     return armor_obtained;
 }

@@ -13,14 +13,6 @@
 using std::string;
 using namespace cv;
 
-struct armor_loc{
-    float center_x;
-    float center_y;
-    float width;
-    float height;
-    float ang;
-};
-
     /* Common Functions */
 
 /*
@@ -30,13 +22,6 @@ struct armor_loc{
  * @return largest of the two
  */
 template<class T> const T& max_of_two(const T& a, const T&b) {return (a>b)? a:b;}
-
-/*
- * @brief translate armor loc into cv::RotatedRect; should be deprecated.
- * @param al armor_loc object
- * @return cv::RotatedRect
- */
-RotatedRect armor_loc_2_rotated_rect(armor_loc al);
 
 /**
  * Magic function that highlights red or blue area
@@ -94,7 +79,7 @@ public:
      * Process image (frame) in current video buffer; pure virtual function to be implemented
      * @return vector of cv::Rect object(s)
      */
-    virtual std::vector<armor_loc> get_hitbox(void) = 0;
+    virtual std::vector<RotatedRect> get_hitbox(void) = 0;
 
 private:
     /* to be added */
@@ -119,7 +104,7 @@ public:
      * Process image (frame) in current video buffer; pure virtual function to be implemented
      * @return vector of cv::Rect object(s)
      */
-    vector<armor_loc> get_hitbox(void);
+    vector<RotatedRect> get_hitbox(void);
 
     /**
      * @brief
@@ -165,14 +150,14 @@ private:
      * @param ori_img ref to original image captured by camera
      * @return vector of armor_loc objects
      */
-    vector<armor_loc> detect_armor(vector<RotatedRect> & filtered_light_bars, const Mat & ori_img);
+    vector<RotatedRect> detect_armor(vector<RotatedRect> & filtered_light_bars, const Mat & ori_img);
 
     /*
      * @brief armor filtering model. Not implemented for now
      * @param armor_obtained armor_loc objects from last step
      * @return filtered armor_loc objects
      */
-    vector<armor_loc> filter_armor(const vector<armor_loc> & armor_obtained);
+    vector<RotatedRect> filter_armor(const vector<RotatedRect> & armor_obtained);
 };
 
 #endif

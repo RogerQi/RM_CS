@@ -12,12 +12,12 @@ int main(void){
     CameraBase * cam = new VideoFeed(file_path);
     ir_aimbot detector(cam, "blue");
     while(cam->is_alive()){
-        std::vector<armor_loc> ret = detector.get_hitbox();
+        std::vector<RotatedRect> ret = detector.get_hitbox();
         Mat frame_shower = detector.get_cur_frame();
         std::vector<RotatedRect> visual_rects;
         visual_rects.reserve(ret.size());
         for(size_t i = 0; i < ret.size(); i++){
-            visual_rects.push_back(armor_loc_2_rotated_rect(ret[i]));
+            visual_rects.push_back(ret[i]);
         }
         Scalar color = Scalar(255, 0, 0);
         for(size_t i = 0; i < visual_rects.size(); i++){
