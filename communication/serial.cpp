@@ -99,11 +99,11 @@ bool CSerial::set_parity(char parity) {
     }
 }
 
-int CSerial::write_blocking(char *data, int length) {
+int CSerial::write_bytes(char *data, int length) {
     return write(_fd, data, length);
 }
 
-int CSerial::read_blocking(char *data, int length) {
+int CSerial::read_bytes(char *data, int length) {
     if (!bytes_available())
         return 0;
     return read(_fd, data, length);
