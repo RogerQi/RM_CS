@@ -220,29 +220,36 @@ bool Rune::red_contour_detect(void){
     if(temp_contour.size() < 5){
         return false;
     }
+    /*
     int * remove_flag = new int[temp_contour.size()];
     for(int i = 0; i < temp_contour.size(); i++){ remove_flag[i] = 0; } //init
     int count = -1;
+    */
     for(auto it = temp_contour.begin(); it != temp_contour.end(); ++it){
-        count++;
+        //count++;
         vector<Point> cnt = *(it);
         RotatedRect rect = minAreaRect(cnt);
         if(rect.size.area() < MIN_RED_DIG_AREA){
             //if area is too small; remove it
-            /*
-            temp_contour.erase(it, it+1);
-            */
-            remove_flag[count] = 1;
+            //temp_contour.erase(it);
+            //remove_flag[count] = 1;
             continue;
+        } else {
+            Point2f pts[4];
+            rect.points(pts);
+            vector<Point> temp;
+            for(const Point2f & pt : pts){
+                temp.push_back(pt);
+            }
+            r_contours.push_back(temp);
         }
-        Point2f pts[4];
-        rect.points(pts);
-        vector<Point> temp;
-        for(const Point2f & pt : pts){
-            temp.push_back(pt);
-        }
-        r_contours.push_back(temp);
     }
+    /*
+    for(int i = 0; i < temp_contour.size(); i++){
+
+    }
+    delete[] remove_flag;
+    */
     if(r_contours.size() < 5){
         return false;
     }
