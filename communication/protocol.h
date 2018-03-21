@@ -4,7 +4,7 @@
 #include "serial.h"
 
 #define MAX_BUFFER_LENGTH 30
-#define IRM 0x0049524d  // Ascii value for "Null I R M"
+#define IRM "IRM"  // Ascii value for "M R I Null"
 
 static const unsigned char k_crc8 = 0xff;
 static constexpr unsigned char crc8_table[256] = {
@@ -34,31 +34,99 @@ static constexpr unsigned char crc8_table[256] = {
     0x89, 0x6b, 0x35
 };
 
+typedef enum {
+    GIMBAL_CONTROL = 0x00A1,
+
+    AIM_REQUEST = 0x0012,
+
+} command_id_e;
+
+typedef enum {
+    RUNE = 0x00,
+    AUTOAIM = 0x01,
+} aim_request_mode_e;
+
 typedef struct {
-    uint32_t    irm;
+    char        irm[4];
     uint16_t    data_length;
-    uint8_t     hash_str;
+    uint8_t     crc;
 } __attribute__((packed)) header_t;
+
+typedef struct {
+    uint16_t    command_id;
+    uint8_t     mode;
+    uint8_t     crc;
+} __attribute__((packed)) aim_request_t;
+
+typedef struct {
+    uint16_t    command_id;
+    uint16_t    pitch_ref;
+    uint16_t    yaw_ref;
+    uint8_t     crc;
+} __attribute__((packed)) gimbal_control_t;
+
+typedef union {
+    header_t            header;
+
+    gimbal_control_t    gimbal_control;
+    
+    aim_request_t       aim_request;
+}   recv_u;
 
 class Protocol {
 public:
-
+    
+    /**
+     * @brief constructor of Protocol
+     * @param ser a pointer to a CSerial object instance
+     */
     Protocol(CSerial *ser);
     
+    /**
+     * @brief destructor of Protocol
+     */
     ~Protocol();
 
-    uint8_t get_crc8(char *data, uint16_t length, uint8_t crc8);
+    /**
+     * @brief calculate crc8 bit given an array of bytes
+     * @param data byte array
+     * @param length length of data
+     * @param crc8 initial value
+     * @return calculated crc8 verification byte
+     */
+    char get_crc8(char *data, uint16_t length, char crc8);
     
+    /**
+     * @brief check if the message is corrupted
+     * @param data byte array containing the last crc byte
+     * @param length length of data
+     * @return true if successfully appends the crc byte
+     */
     bool check_crc8(char *data, uint16_t length);
 
+    /**
+     * @brief append the crc verification byte to the given data array
+     * @param data byte array
+     * @param length length of data
+     * @return none
+     */
     void append_crc8(char *data, uint16_t length);
 
-    bool get_header();
+    /**
+     * @brief read from serial port and try to obtain a header
+     * @return the pointer to a header_t typed data, NULL is returned if
+     *         failed to obtain the header
+     */
+    header_t* get_header();
 
+    bool process_body(uint16_t length);
 private:
     header_t    _header;
-    char        _buf[MAX_BUFFER_LENGTH];
+    char        _rxbuf[MAX_BUFFER_LENGTH];
+    char        _txbuf[MAX_BUFFER_LENGTH];
     CSerial     *_ser;
+
+    void pack_data(char *data, uint16_t length);
 };
 
 #endif

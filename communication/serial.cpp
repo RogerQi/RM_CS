@@ -11,7 +11,7 @@ CSerial::CSerial(string port, int baudrate, int data_bits,
     _fd = open(port.c_str(), O_RDWR | O_NOCTTY | O_NDELAY);
     if (_fd == -1)
         cout << "serial port open failed!" << endl;
-    if (!tcgetattr(_fd, &_old_termios_options))
+    if (tcgetattr(_fd, &_old_termios_options))
         cout << "get serial attributes error!" << endl;
     _termios_options = _old_termios_options;
     _termios_options.c_cflag |= (CLOCAL | CREAD);
@@ -29,7 +29,7 @@ CSerial::CSerial(string port, int baudrate, int data_bits,
     _termios_options.c_iflag = IGNBRK;
     _termios_options.c_cc[VTIME] = 1;
     _termios_options.c_cc[VMIN] = 0;
-    if (!tcsetattr(_fd, TCSANOW, &_termios_options))
+    if (tcsetattr(_fd, TCSANOW, &_termios_options))
         cout << "set attribute error!" << endl;
 }
 
