@@ -220,12 +220,19 @@ bool Rune::red_contour_detect(void){
     if(temp_contour.size() < 5){
         return false;
     }
+    int * remove_flag = new int[temp_contour.size()];
+    for(int i = 0; i < temp_contour.size(); i++){ remove_flag[i] = 0; } //init
+    int count = -1;
     for(auto it = temp_contour.begin(); it != temp_contour.end(); ++it){
+        count++;
         vector<Point> cnt = *(it);
         RotatedRect rect = minAreaRect(cnt);
         if(rect.size.area() < MIN_RED_DIG_AREA){
             //if area is too small; remove it
+            /*
             temp_contour.erase(it, it+1);
+            */
+            remove_flag[count] = 1;
             continue;
         }
         Point2f pts[4];
@@ -283,7 +290,7 @@ void Rune::red_batch_generate(){
         digit_img = red_digit_process(digit_img);
         digit_img = pad_digit(digit_img);
         //cv::bitwise_not(digit_img(cv::Rect(offset, offset, DIGIT_SIZE, DIGIT_SIZE)), digit_img);
-        std::cout << "mean of cur img" << mean(digit_img) << std::endl;
+        //std::cout << "mean of cur img" << mean(digit_img) << std::endl;
         r_digits.push_back(digit_img);
     }
 }
