@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <vector>
 #include <cstring>
+#include <cassert>
 #include "cv_config.h"
 #include "camera.h"
 
@@ -26,7 +27,7 @@ using namespace std;
 #define DIGIT_SIZE      28
 
 #define DISTILL_RED_TH  80
-#define MIN_RED_DIG_AREA 8
+#define MIN_RED_DIG_AREA 50
 
 
 class Rune {
@@ -96,8 +97,9 @@ private:
     void digit_recog();
     void distill_red_dig();
     bool red_contour_detect();
+    Mat pad_digit(const Mat & src_img);
     void red_batch_generate();
-    Mat red_digit_process();
+    Mat red_digit_process(const Mat & src_img);
 
     /**
      * @brief feed in data batch to caffe model and utilize irrelevent class

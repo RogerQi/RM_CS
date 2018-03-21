@@ -242,19 +242,27 @@ bool Rune::red_contour_detect(void){
     return true;
 }
 
-Mat Rune::red_digit_process(){
+Mat Rune::red_digit_process(const Mat & src_img){
     Mat ret;
-    threshold(gray_img, ret, 50, 255, cv::THRESH_BINARY);
-    morphologyEx(ret, ret, MORPH_OPEN, Mat::ones(3, 3, CV_8UC1));
-    morphologyEx(ret, ret, MORPH_CLOSE, Mat::ones(4, 5, CV_8UC1));
-    dilate(ret, ret, Mat::ones(2, 4, CV_8UC1));
+    threshold(src_img, ret, 100, 255, cv::THRESH_BINARY);
+    //morphologyEx(ret, ret, MORPH_OPEN, Mat::ones(3, 3, CV_8UC1));
+    morphologyEx(ret, ret, MORPH_CLOSE, Mat::ones(2, 3, CV_8UC1));
+    dilate(ret, ret, Mat::ones(2, 2, CV_8UC1));
     return ret;
+}
+
+Mat Rune::pad_digit(const Mat & src_img){
+    assert(src_img.cols <= DIGIT_SIZE && src_img.rows <= DIGIT_SIZE);
+    Mat painting = Mat::zeros(DIGIT_SIZE, DIGIT_SIZE, CV_8UC1);
+    int x_offset = (DIGIT_SIZE - src_img.cols) / 2;
+    int y_offset = (DIGIT_SIZE - src_img.rows) / 2;
+    src_img.copyTo(painting(Rect(x_offset, y_offset, src_img.cols, src_img.rows)));
+    return painting;
 }
 
 void Rune::red_batch_generate(){
     int offset = (CROP_SIZE - DIGIT_SIZE) / 2;
     Mat M;
-    Mat nice_red_ref = red_digit_process();
     Point2f cnt_points[4];
     r_digits.clear();
     int i = 0;
@@ -268,14 +276,12 @@ void Rune::red_batch_generate(){
         for (size_t i = 0; i < 4; i++)
             cnt_points[i] = Point2f(cnt[i]);
         Mat digit_img;
-        Point2f red_dst_points[4] = {Point2f(0, 0), Point2f(DIGIT_SIZE, 0),
-                            Point2f(0, DIGIT_SIZE), Point2f(DIGIT_SIZE, DIGIT_SIZE)};
+        Point2f red_dst_points[4] = {Point2f(0, 0), Point2f(15, 0),
+                            Point2f(0, 20), Point2f(15, 20)};
         M = cv::getPerspectiveTransform(cnt_points, red_dst_points);
-        #ifdef DEBUG
-            imshow("red_de", nice_red_ref);
-            waitKey(1);
-        #endif
-        cv::warpPerspective(nice_red_ref, digit_img, M, Size(DIGIT_SIZE, DIGIT_SIZE));
+        cv::warpPerspective(gray_img, digit_img, M, Size(15, 20));
+        digit_img = red_digit_process(digit_img);
+        digit_img = pad_digit(digit_img);
         //cv::bitwise_not(digit_img(cv::Rect(offset, offset, DIGIT_SIZE, DIGIT_SIZE)), digit_img);
         std::cout << "mean of cur img" << mean(digit_img) << std::endl;
         r_digits.push_back(digit_img);
