@@ -10,9 +10,9 @@ using std::string;
 int main(void){
     string file_path = "blue_1.mp4";
     CameraBase * cam = new VideoFeed(file_path);
-    ir_aimbot detector(cam, "blue");
+    ir_aimbot detector("blue");
     while(cam->is_alive()){
-        std::vector<RotatedRect> ret = detector.get_hitbox();
+        std::vector<RotatedRect> ret = detector.get_hitbox(cam);
         Mat frame_shower = detector.get_cur_frame();
         std::vector<RotatedRect> visual_rects;
         visual_rects.reserve(ret.size());

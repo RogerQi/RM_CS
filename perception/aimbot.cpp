@@ -97,7 +97,7 @@ Mat _image_cropper(const Mat & frame, Point2f poi){
     return ret;
 }
 
-ir_aimbot::ir_aimbot(CameraBase * cam_ptr, string color_type_str) : my_cam(cam_ptr){
+ir_aimbot::ir_aimbot(string color_type_str){
     my_color = color_type_str;
     my_distillation_threshold = blue_threshold;
     if(my_color == "red"){
@@ -120,7 +120,7 @@ void ir_aimbot::preprocess_frame(Mat & cur_frame_distilled, const Mat & cur_fram
     cur_frame_distilled = cur_frame_distilled & cur_frame_gray_binarized;
 }
 
-vector<RotatedRect> ir_aimbot::get_hitbox(void){
+vector<RotatedRect> ir_aimbot::get_hitbox(CameraBase * my_cam){
     //get cur image from camera
     Mat cur_frame_distilled;
     my_cam->get_img(cur_frame);

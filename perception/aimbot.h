@@ -79,7 +79,7 @@ public:
      * Process image (frame) in current video buffer; pure virtual function to be implemented
      * @return vector of cv::Rect object(s)
      */
-    virtual std::vector<RotatedRect> get_hitbox(void) = 0;
+    virtual std::vector<RotatedRect> get_hitbox(CameraBase * my_cam) = 0;
 
 private:
     /* to be added */
@@ -93,7 +93,7 @@ public:
     /**
      * constructor; initialize configuration into memory
      */
-    ir_aimbot(CameraBase * cam_ptr, string color_type_str);
+    ir_aimbot(string color_type_str);
 
     /**
      * class destructor
@@ -104,7 +104,7 @@ public:
      * Process image (frame) in current video buffer; pure virtual function to be implemented
      * @return vector of cv::Rect object(s)
      */
-    vector<RotatedRect> get_hitbox(void);
+    vector<RotatedRect> get_hitbox(CameraBase * my_cam);
 
     /**
      * @brief
@@ -113,8 +113,6 @@ public:
     inline Mat & get_cur_frame(void) { return cur_frame; }
 
 private:
-    CameraBase * my_cam;
-
     Mat cur_frame;
 
     string my_color;
