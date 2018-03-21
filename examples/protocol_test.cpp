@@ -19,6 +19,9 @@ int main() {
         if ((hd = proto->get_header())) {
             proto->process_body(hd->data_length);
         }
+        else {
+            ser->flush();
+        }
         usleep(1e5);
     }
     return 0;

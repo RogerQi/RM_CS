@@ -15,13 +15,16 @@ int main() {
         }
         vector<int> red_seq;
         rune->get_red_seq(red_seq);
-#ifdef DEBUG
         if(white_seq.size() > 0){
             for (auto w: white_seq)
                 cout << w << ' ';
             cout << endl;
         }
-#endif
+        if (red_seq.size() > 0) {
+            for (auto r: red_seq)
+                cout << r << ' ';
+            cout << endl;
+        }
     }
     return 0;
 }

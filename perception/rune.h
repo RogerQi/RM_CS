@@ -26,7 +26,7 @@ using namespace std;
 #define CROP_SIZE       32
 #define DIGIT_SIZE      28
 
-#define DISTILL_RED_TH  80
+#define DISTILL_RED_TH  70
 #define MIN_RED_DIG_AREA 50
 
 
@@ -72,6 +72,11 @@ public:
     bool get_red_seq(vector<int> &seq);
 
 private:
+    int x_min;
+    int x_max;
+    int y_min;
+    int y_max;
+
     Mat white_bin;
     Mat red_bin;
     Mat raw_img;

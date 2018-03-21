@@ -85,7 +85,6 @@ bool Protocol::process_body(uint16_t length) {
                 gc->pitch_ref = 10;
                 gc->yaw_ref = 10;
                 pack_data(_txbuf, sizeof(gimbal_control_t));
-                cout << "0x";
             }
             else
                 return false;

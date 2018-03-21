@@ -69,7 +69,7 @@ void Rune::contour_detect() {
 
     cv::findContours(white_bin, contours, hierarchy,
             cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
-    for (auto cnt: contours) {
+    for (auto &cnt: contours) {
         float width = (*max_element(cnt.begin(), cnt.end(), cmp_x)).x -
             (*min_element(cnt.begin(), cnt.end(), cmp_x)).x;
         float height = (*max_element(cnt.begin(), cnt.end(), cmp_y)).y -
@@ -131,7 +131,7 @@ void Rune::network_inference(vector<pair<int, int> > &predictions,
     float *input_data = input_layer->mutable_gpu_data();
     float *output_data = output_layer->mutable_gpu_data();
 #endif
-    for (auto dig: desired_digits) {
+    for (auto &dig: desired_digits) {
         Mat channel(DIGIT_SIZE, DIGIT_SIZE, CV_32FC1, input_data);
         dig.convertTo(channel, CV_32FC1);
         channel /= 255;
@@ -147,14 +147,17 @@ void Rune::network_inference(vector<pair<int, int> > &predictions,
             predictions.push_back(pair<int, int>(i, dig_id));
     }
 #ifdef DEBUG
-    for(auto p: predictions) {
+    for(auto &p: predictions) {
         int dig_id = p.second;
         Point loc = desired_contours[p.first][0];
         loc.y -= 20;
         putText(debug_img, to_string(dig_id), loc, FONT_HERSHEY_SIMPLEX, 0.9,
                 Scalar(0, 150, 100), 2, LINE_AA);
     }
-    imshow("digit recognition", debug_img);
+    if (predictions.size() == 9)
+        imshow("white digit recognition", debug_img);
+    else if (predictions.size() == 5)
+        imshow("red digit recognition", debug_img);
     waitKey(1);
 #endif
 }
@@ -180,7 +183,12 @@ bool Rune::get_white_seq(vector<int> &seq) {
     sort(loc_idx.begin()+3, loc_idx.begin()+6, cmp_px);
     sort(loc_idx.begin()+6, loc_idx.end(), cmp_px);
 
-    for (auto li: loc_idx)
+    x_min = loc_idx[0].first.x;
+    x_max = loc_idx[2].first.x;
+    x_max += (x_max - x_min) / 2.3;
+    y_min = max(loc_idx[0].first.y, loc_idx[2].first.y);
+
+    for (auto &li: loc_idx)
         seq.push_back(li.second);
     return true;
 }
@@ -192,41 +200,37 @@ bool Rune::get_red_seq(vector<int> &seq) {
         return false;
     red_batch_generate();
     vector<pair<int, int> > predictions;
-    #ifdef DEBUG
-        for(size_t i = 0; i < r_digits.size(); i++){
-            imwrite(to_string(i) + ".jpg", r_digits[i]);
-        }
-    #endif
     network_inference(predictions, r_digits, r_contours);
     if(predictions.size() < 5){
         return false;
     }
+    
     vector<pair<Point, int> > loc_idx;
     for (size_t i = 0; i < predictions.size(); i++)
-        loc_idx.push_back(pair<Point, int>(w_contours[predictions[i].first][0],
+        loc_idx.push_back(pair<Point, int>(r_contours[predictions[i].first][0],
                     predictions[i].second));
     sort(loc_idx.begin(), loc_idx.end(), cmp_px);
     for(const pair<Point, int> & pa : loc_idx){
         seq.push_back(pa.second);
     }
-    return true;
+    return true; 
 }
 
 bool Rune::red_contour_detect(void){
     vector<Vec4i> hierarchy;
     vector<vector<Point> > temp_contour;
     r_contours.clear();
-    findContours(distilled_img, temp_contour, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
+    findContours(distilled_img, temp_contour, hierarchy, cv::RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
     if(temp_contour.size() < 5){
         return false;
     }
     for(auto it = temp_contour.begin(); it != temp_contour.end(); ++it){
-        //count++;
         vector<Point> cnt = *(it);
         RotatedRect rect = minAreaRect(cnt);
         if(rect.size.area() < MIN_RED_DIG_AREA){
             continue;
-        } else {
+        }
+        else {
             Point2f pts[4];
             rect.points(pts);
             vector<Point> temp;
@@ -239,6 +243,11 @@ bool Rune::red_contour_detect(void){
     if(r_contours.size() < 5){
         return false;
     }
+#ifdef DEBUG
+    cv::drawContours(debug_img, r_contours, -1, Scalar(0, 255, 0), 3);
+    imshow("red detection", debug_img);
+    waitKey(1);
+#endif
     return true;
 }
 
@@ -276,15 +285,27 @@ void Rune::red_batch_generate(){
         for (size_t i = 0; i < 4; i++)
             cnt_points[i] = Point2f(cnt[i]);
         Mat digit_img;
-        Point2f red_dst_points[4] = {Point2f(0, 0), Point2f(15, 0),
-                            Point2f(0, 20), Point2f(15, 20)};
+        Point w_diff = cnt[0] - cnt[1];
+        Point h_diff = cnt[0] - cnt[2];
+        int w = cv::sqrt(w_diff.x*w_diff.x + w_diff.y*w_diff.y);
+        int h = cv::sqrt(h_diff.x*h_diff.x + h_diff.y*h_diff.y);
+
+        Point2f red_dst_points[4] = {Point2f(0, 0), Point2f(w, 0),
+                            Point2f(0, h), Point2f(w, h)};
         M = cv::getPerspectiveTransform(cnt_points, red_dst_points);
-        cv::warpPerspective(gray_img, digit_img, M, Size(15, 20));
-        digit_img = red_digit_process(digit_img);
+        cv::warpPerspective(distilled_img, digit_img, M, Size(w, h));
+        double scale = (DIGIT_SIZE - 4) * 1.0 / max(w, h);
+        cv::resize(digit_img, digit_img, Size(max(w*scale, 1.0), max(h*scale, 1.0)));
+        //digit_img = red_digit_process(digit_img);
         digit_img = pad_digit(digit_img);
-        //cv::bitwise_not(digit_img(cv::Rect(offset, offset, DIGIT_SIZE, DIGIT_SIZE)), digit_img);
-        //std::cout << "mean of cur img" << mean(digit_img) << std::endl;
         r_digits.push_back(digit_img);
+#ifdef DEBUG
+        std::ostringstream ss;
+        ss << "digit " << i;
+        imshow(ss.str().c_str(), digit_img);
+        waitKey(1);
+        i++;
+#endif
     }
 }
 
@@ -292,7 +313,16 @@ void Rune::distill_red_dig(void){
     std::vector<Mat> bgr;
     split(raw_img, bgr);
     subtract(bgr[2], bgr[1], distilled_img);
-    subtract(distilled_img, bgr[0] * 0.15, distilled_img);
+    distilled_img = distilled_img(cv::Rect(x_min, 0,
+                min(distilled_img.cols, x_max)-x_min, y_min));
+    //subtract(distilled_img, bgr[0] * 0.15, distilled_img);
     threshold(distilled_img, distilled_img, DISTILL_RED_TH, 255, THRESH_BINARY);
     dilate(distilled_img, distilled_img, Mat::ones(5, 3, CV_8UC1));
+#ifdef DEBUG
+    raw_img(cv::Rect(x_min, 0,
+                min(raw_img.cols, x_max)-x_min, y_min)).copyTo(debug_img);
+    imshow("distilled image", distilled_img);
+    imshow("cropped red digit", debug_img);
+    waitKey(1);
+#endif
 }
