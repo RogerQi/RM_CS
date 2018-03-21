@@ -23,7 +23,10 @@ using namespace std;
 
 #define BATCH_SIZE      15
 #define CROP_SIZE       32
-#define DIGIT_SIZE      28    
+#define DIGIT_SIZE      28
+
+#define DISTILL_RED_TH  80
+#define MIN_RED_DIG_AREA 8
 
 
 class Rune {
@@ -44,7 +47,7 @@ public:
     /**
      * @brief calculates the white digit sequence according to the current frame
      *        sequence satisfies the following spatial relationship
-     *      
+     *
      *              1   2   3
      *
      *              4   5   6
@@ -55,7 +58,7 @@ public:
      * @return flag indicating whether successfully identified exact 9 digits or not
      */
     bool get_white_seq(vector<int> &seq);
-    
+
     /**
      * @brief calculates the red digit sequence according to the current frame
      *        sequence satisfies the following spatial relationship
@@ -73,6 +76,7 @@ private:
     Mat raw_img;
     Mat gray_img;
     Mat debug_img;
+    Mat distilled_img;
 
     caffe::Net<float>       *net;
     caffe::Blob<float>      *input_layer;
@@ -81,7 +85,7 @@ private:
     vector<Mat>             r_digits;   // red digits in 28x28 gray scale
     vector<vector<Point> >  w_contours; // white contours
     vector<vector<Point> >  r_contours; // red contours
-    
+
     Point2f dst_points[4] = {Point2f(0, 0), Point2f(CROP_SIZE, 0),
                         Point2f(0, CROP_SIZE), Point2f(CROP_SIZE, CROP_SIZE)};
 
@@ -90,6 +94,10 @@ private:
     void contour_detect();
     void batch_generate();
     void digit_recog();
+    void distill_red_dig();
+    bool red_contour_detect();
+    void red_batch_generate();
+    Mat red_digit_process();
 
     /**
      * @brief feed in data batch to caffe model and utilize irrelevent class
@@ -100,7 +108,8 @@ private:
      *                    for that specific contour location.
      * @return none
      */
-    void network_inference(vector<pair<int, int> > &predictions);
+    void network_inference(vector<pair<int, int> > &predictions,
+            vector<Mat> & desired_digits, vector<vector<Point> > & desired_contours);
 };
 
 #endif

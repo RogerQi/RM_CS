@@ -8,11 +8,19 @@ int main() {
     while (true) {
         vector<int> white_seq;
         rune->update(cam);
-        rune->get_white_seq(white_seq);
+        bool success;
+        success = rune->get_white_seq(white_seq);
+        if(!(success)){
+            continue;
+        }
+        vector<int> red_seq;
+        rune->get_red_seq(red_seq);
 #ifdef DEBUG
-        for (auto w: white_seq)
-            cout << w << ' ';
-        cout << endl;
+        if(white_seq.size() > 0){
+            for (auto w: white_seq)
+                cout << w << ' ';
+            cout << endl;
+        }
 #endif
     }
     return 0;
