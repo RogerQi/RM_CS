@@ -18,8 +18,8 @@ char Protocol::get_crc8(char *data, uint16_t length, char crc8) {
     char index;
 
     while (length--) {
-        index = crc8 ^ *(data++);
-        crc8 = crc8_table[index]; 
+        index = crc8 ^ *data++;
+        crc8 = crc8_table[(uint8_t)index]; 
     }
     return crc8;
 }
@@ -42,12 +42,18 @@ void Protocol::append_crc8(char *data, uint16_t length) {
 
 header_t* Protocol::get_header() {
     uint16_t recv = _ser->read_bytes(_rxbuf, sizeof(header_t));
+#ifdef DEBUG
+    if (recv) {
+        for (size_t i = 0; i < recv; i++)
+            printf("%hhu ", _rxbuf[i]);
+        cout << endl;
+    }
+#endif
     if (recv != sizeof(header_t) ||
             !check_crc8(_rxbuf, sizeof(header_t))) { 
         _ser->flush();
         return NULL;
     }
-
     recv_u *rec_data = (recv_u*)_rxbuf;
 
     if (strcmp(rec_data->header.irm, IRM)) {
@@ -68,6 +74,13 @@ void Protocol::pack_data(char *data, uint16_t length) {
 
 bool Protocol::process_body(uint16_t length) {
     uint16_t recv = _ser->read_bytes(_rxbuf, length);
+#ifdef DEBUG
+    if (recv) {
+        for (size_t i = 0; i < recv; i++)
+            printf("%hhu ", _rxbuf[i]);
+        cout << endl;
+    }
+#endif
     if (recv != length ||
             !check_crc8(_rxbuf, length)) {
         return false;
@@ -75,22 +88,22 @@ bool Protocol::process_body(uint16_t length) {
     
     recv_u *rec_data = (recv_u*)_rxbuf;
     switch (rec_data->aim_request.command_id) {
-        case AIM_REQUEST:
-            if (rec_data->aim_request.mode == RUNE) {
+    case AIM_REQUEST:
+        if (rec_data->aim_request.mode == RUNE) {
 
-            }
-            else if (rec_data->aim_request.mode == AUTOAIM) {
-                gimbal_control_t *gc = (gimbal_control_t*)(_txbuf + sizeof(header_t));
-                gc->command_id = GIMBAL_CONTROL;
-                gc->pitch_ref = 10;
-                gc->yaw_ref = 10;
-                pack_data(_txbuf, sizeof(gimbal_control_t));
-            }
-            else
-                return false;
-            break;
-        default:
+        }
+        else if (rec_data->aim_request.mode == AUTOAIM) {
+            gimbal_control_t *gc = (gimbal_control_t*)(_txbuf + sizeof(header_t));
+            gc->command_id = GIMBAL_CONTROL;
+            gc->pitch_ref = 10;
+            gc->yaw_ref = 10;
+            pack_data(_txbuf, sizeof(gimbal_control_t));
+        }
+        else
             return false;
+        break;
+    default:
+        return false;
     }
     return true; 
 }
