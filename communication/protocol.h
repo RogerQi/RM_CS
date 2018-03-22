@@ -36,7 +36,8 @@ static constexpr unsigned char crc8_table[256] = {
 
 typedef enum {
     GIMBAL_CONTROL = 0x00A1,
-
+    
+    IDLE_MSG = 0x0000,
     AIM_REQUEST = 0x0012,
 
 } command_id_e;
@@ -54,6 +55,11 @@ typedef struct {
 
 typedef struct {
     uint16_t    command_id;
+    uint8_t     crc;
+} __attribute__((packed)) idle_msg_t;
+
+typedef struct {
+    uint16_t    command_id;
     uint8_t     mode;
     uint8_t     crc;
 } __attribute__((packed)) aim_request_t;
@@ -66,12 +72,11 @@ typedef struct {
 } __attribute__((packed)) gimbal_control_t;
 
 typedef union {
-    header_t            header;
-
     gimbal_control_t    gimbal_control;
     
+    idle_msg_t          idle_msg;
     aim_request_t       aim_request;
-}   recv_u;
+}   data_u;
 
 class Protocol {
 public:
@@ -89,28 +94,28 @@ public:
 
     /**
      * @brief calculate crc8 bit given an array of bytes
-     * @param data byte array
+     * @param ptr pointer to byte array
      * @param length length of data
      * @param crc8 initial value
      * @return calculated crc8 verification byte
      */
-    char get_crc8(char *data, uint16_t length, char crc8);
+    char get_crc8(void *ptr, uint16_t length, char crc8);
     
     /**
      * @brief check if the message is corrupted
-     * @param data byte array containing the last crc byte
+     * @param ptr pointer to byte array containing the last crc byte
      * @param length length of data
      * @return true if successfully appends the crc byte
      */
-    bool check_crc8(char *data, uint16_t length);
+    bool check_crc8(void *ptr, uint16_t length);
 
     /**
      * @brief append the crc verification byte to the given data array
-     * @param data byte array
+     * @param ptr pointer to byte array
      * @param length length of data
      * @return none
      */
-    void append_crc8(char *data, uint16_t length);
+    void append_crc8(void *ptr, uint16_t length);
 
     /**
      * @brief read from serial port and try to obtain a header
@@ -123,16 +128,24 @@ public:
      * @brief given the length of the body data read from the header, parse
      *        data from the body bytes
      * @param length the length of the following body data
-     * @return true if succesully parsed data bytes
+     * @return body data union pointer, NULL if failed to parse body data;
      */
-    bool process_body(uint16_t length);
+    data_u *get_body();
+
+    /**
+     * @brief process the latest read message and send reponse according to 
+     *        the recieved data
+     * @return none
+     */
+    void process_and_transmit();
 private:
     header_t    _header;
+    data_u      _body_data;
     char        _rxbuf[MAX_BUFFER_LENGTH];
     char        _txbuf[MAX_BUFFER_LENGTH];
     CSerial     *_ser;
 
-    void pack_data(char *data, uint16_t length);
+    void pack_data(void *ptr, uint16_t length);
 };
 
 #endif

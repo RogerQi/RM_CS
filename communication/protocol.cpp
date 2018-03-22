@@ -10,12 +10,14 @@ using namespace std;
 
 Protocol::Protocol(CSerial *ser) {
     this->_ser = ser;
+    _body_data.idle_msg.command_id = IDLE_MSG;
 }
 
 Protocol::~Protocol() {}
 
-char Protocol::get_crc8(char *data, uint16_t length, char crc8) {
+char Protocol::get_crc8(void *ptr, uint16_t length, char crc8) {
     char index;
+    char *data = (char*)ptr;
 
     while (length--) {
         index = crc8 ^ *data++;
@@ -24,47 +26,49 @@ char Protocol::get_crc8(char *data, uint16_t length, char crc8) {
     return crc8;
 }
 
-bool Protocol::check_crc8(char *data, uint16_t length) {
+bool Protocol::check_crc8(void *ptr, uint16_t length) {
+    char *data = (char*)ptr;
+
     if (length <= 2 || !data) {
         cout << "NULL point encoutered or data length too short!" << endl; 
         return false;
     }
-    return (get_crc8(data, length - 1, k_crc8) == data[length - 1]);
+    return (get_crc8(ptr, length - 1, k_crc8) == data[length - 1]);
 }
 
-void Protocol::append_crc8(char *data, uint16_t length) {
+void Protocol::append_crc8(void *ptr, uint16_t length) {
+    char *data = (char*)ptr;
+
     if (length <= 2 || !data) {
         cout << "NULL point encoutered or data length too short!" << endl; 
         return;
     }
-    data[length - 1] = get_crc8(data, length - 1, k_crc8);
+    data[length - 1] = get_crc8(ptr, length - 1, k_crc8);
 }
 
 header_t* Protocol::get_header() {
-    uint16_t recv = _ser->read_bytes(_rxbuf, sizeof(header_t));
+    uint16_t recv = _ser->read_bytes(&_header, sizeof(header_t));
 #ifdef DEBUG
+    char *rxbuf = (char*)_header;
     if (recv) {
         for (size_t i = 0; i < recv; i++)
-            printf("%hhu ", _rxbuf[i]);
+            printf("%hhu ", rxbuf[i]);
         cout << endl;
     }
 #endif
     if (recv != sizeof(header_t) ||
-            !check_crc8(_rxbuf, sizeof(header_t))) { 
-        _ser->flush();
+            !check_crc8(&_header, sizeof(header_t)))
         return NULL;
-    }
-    recv_u *rec_data = (recv_u*)_rxbuf;
+    
+    if (strcmp(_header.irm, IRM))
+        return NULL;
 
-    if (strcmp(rec_data->header.irm, IRM)) {
-        _ser->flush();
-        return NULL;
-    }
-    return (header_t*)_rxbuf;
+    return &_header;
 }
 
-void Protocol::pack_data(char *data, uint16_t length) {
-    header_t *hd = (header_t*)data;
+void Protocol::pack_data(void *ptr, uint16_t length) {
+    char *data = (char*)ptr;
+    header_t *hd = (header_t*)ptr;
     strcpy(hd->irm, IRM);
     hd->data_length = length;
     append_crc8(data, sizeof(header_t));
@@ -72,8 +76,8 @@ void Protocol::pack_data(char *data, uint16_t length) {
     append_crc8(data, length);
 }
 
-bool Protocol::process_body(uint16_t length) {
-    uint16_t recv = _ser->read_bytes(_rxbuf, length);
+data_u* Protocol::get_body() {
+    uint16_t recv = _ser->read_bytes(_rxbuf, _header.data_length);
 #ifdef DEBUG
     if (recv) {
         for (size_t i = 0; i < recv; i++)
@@ -81,29 +85,33 @@ bool Protocol::process_body(uint16_t length) {
         cout << endl;
     }
 #endif
-    if (recv != length ||
-            !check_crc8(_rxbuf, length)) {
-        return false;
-    }
+    if (recv != _header.data_length ||
+            !check_crc8(_rxbuf, _header.data_length))
+        return NULL;
     
-    recv_u *rec_data = (recv_u*)_rxbuf;
-    switch (rec_data->aim_request.command_id) {
-    case AIM_REQUEST:
-        if (rec_data->aim_request.mode == RUNE) {
+    memcpy(&_body_data, _rxbuf, sizeof(data_u));
+    return &_body_data; 
+}
 
-        }
-        else if (rec_data->aim_request.mode == AUTOAIM) {
-            gimbal_control_t *gc = (gimbal_control_t*)(_txbuf + sizeof(header_t));
-            gc->command_id = GIMBAL_CONTROL;
-            gc->pitch_ref = 10;
-            gc->yaw_ref = 10;
-            pack_data(_txbuf, sizeof(gimbal_control_t));
-        }
-        else
-            return false;
-        break;
-    default:
-        return false;
+void Protocol::process_and_transmit() {
+    switch (_body_data.aim_request.command_id) {
+        case IDLE_MSG:
+            break;
+        case AIM_REQUEST:
+            if (_body_data.aim_request.mode == RUNE) {
+
+            }
+            else if (_body_data.aim_request.mode == AUTOAIM) {
+                gimbal_control_t *gc = (gimbal_control_t*)(_txbuf + sizeof(header_t));
+                gc->command_id = GIMBAL_CONTROL;
+                gc->pitch_ref = 10;
+                gc->yaw_ref = 10;
+                pack_data(_txbuf, sizeof(gimbal_control_t));
+            }
+            else
+                cout << "Body data meaningless!" << endl;
+            break;
+        default:
+            cout << "Message Not Implemented Yet!" << endl;
     }
-    return true; 
 }

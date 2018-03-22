@@ -19,7 +19,7 @@ int main() {
         header_t *hd;
         if ((hd = proto->get_header())) {
             cout << "header read complete" << endl;
-            if (proto->process_body(hd->data_length))
+            if (proto->get_body())
                 cout << "data proccessed success" << endl;
         }
         else {

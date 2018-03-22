@@ -71,7 +71,7 @@ public:
      * @param length data length
      * @return number of bytes written successfully
      */
-    int write_bytes(const char* data, int length);
+    int write_bytes(const void* data, int length);
 
     /**
      * @brief reads from serial port and store data into buffer
@@ -79,7 +79,7 @@ public:
      * @param length how many bytes to recieve
      * @return number of bytes read
      */
-    int read_bytes(char *data, int length);
+    int read_bytes(void *data, int length);
 
     /**
      * @brief number of bytes available in the buffer
