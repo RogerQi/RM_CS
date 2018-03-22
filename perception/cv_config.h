@@ -12,4 +12,7 @@
 #define RUNE_DETECT_TIME_SPAN  0.5
 #define RUNE_WAIT_TIME         1.0
 
+#define RUNE_CAMERA_FOV_X      60.0
+#define RUNE_CAMERA_FOV_Y      60.0
+
 #endif

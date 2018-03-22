@@ -86,7 +86,9 @@ public:
      * @brief get angle to move to hit the desired digit.
      * @param cam ptr to camera object
      * @return data pair of angles. <pitch, yaw>. Angles are relative
-     *         to current angle
+     *         to current angle. Yaw angle is positive if we want to
+     *         move to the right. Pitch angle is positive if we want
+     *         to look upward.
      */
     pair<float, float> get_hit_angle(CameraBase * cam);
 
@@ -96,6 +98,8 @@ private:
     int y_min;
     int y_max;
     int cur_round_counter;
+    float angle_d_yaw;
+    float angle_d_pitch;
 
     Mat white_bin;
     Mat red_bin;
@@ -111,6 +115,7 @@ private:
     vector<Mat>             r_digits;   // red digits in 28x28 gray scale
     vector<vector<Point> >  w_contours; // white contours
     vector<vector<Point> >  r_contours; // red contours
+    vector<pair<vector<Point>, int> > loc_idx;  // Points are upper left corner (of contours)
 
     int cur_red_digits[5];
     int cur_white_digits[9];

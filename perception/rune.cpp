@@ -20,7 +20,11 @@ bool cmp_y(Point &i, Point &j) { return i.y < j.y; }
 
 bool cmp_px(pair<Point, int> &i, pair<Point, int> &j) { return i.first.x < j.first.x; }
 
+bool cmp_cnt_px(pair<vector<Point>, int> &i, pair<vector<Point>, int> &j) { return i.first[0].x < j.first[0].x; }
+
 bool cmp_py(pair<Point, int> &i, pair<Point, int> &j) { return i.first.y < j.first.y; }
+
+bool cmp_cnt_py(pair<vector<Point>, int> &i, pair<vector<Point>, int> &j) { return i.first[0].y < j.first[0].y; }
 
 template<class T>
 int argmax(const T * data, size_t length) {
@@ -54,6 +58,8 @@ Rune::Rune(string net_file, string param_file) {
     net->Reshape();
     input_layer = net->input_blobs()[0];
     output_layer = net->output_blobs()[0];
+    angle_d_pitch = (RUNE_CAMERA_FOV_Y) / (IMAGE_HEIGHT * 1.0);
+    angle_d_yaw = (RUNE_CAMERA_FOV_X) / (IMAGE_WIDTH * 1.0);
 }
 
 Rune::~Rune() {}
@@ -76,6 +82,26 @@ int Rune::get_hit_pos(CameraBase * cam){
 
 pair<float, float> Rune::get_hit_angle(CameraBase * cam){
     get_current_rune(cam);
+    int pos = calc_position_to_hit();
+    int cur_digit = cur_white_digits[pos];
+    vector<Point> desired_cnt;
+    for(size_t i = 0; i < loc_idx.size(); i++){
+        if(loc_idx[i].second == cur_digit){
+            desired_cnt = loc_idx[i].first;
+            break;
+        }
+    }
+    float x = 0;
+    float y = 0;
+    for(const Point & pt : desired_cnt){
+        x += pt.x;
+        y += pt.y;
+    }
+    x = x / static_cast<int>(desired_cnt.size());
+    y = y / static_cast<int>(desired_cnt.size());
+    float yaw = - (IMAGE_WIDTH / 2.0 - x) * angle_d_yaw;
+    float pitch = (IMAGE_HEIGHT / 2.0 - y) * angle_d_pitch;
+    return pair<float, float>(pitch, yaw);
 }
 
 int Rune::calc_position_to_hit(void){
@@ -263,19 +289,19 @@ bool Rune::get_white_seq(vector<int> &seq) {
     if (predictions.size() != 9)
         return false;
 
-    vector<pair<Point, int> > loc_idx;
+    loc_idx.clear();
     for (size_t i = 0; i < predictions.size(); i++)
-        loc_idx.push_back(pair<Point, int>(w_contours[predictions[i].first][0],
+        loc_idx.push_back(pair<vector<Point>, int>(w_contours[predictions[i].first],
                     predictions[i].second));
-    sort(loc_idx.begin(), loc_idx.end(), cmp_py);
-    sort(loc_idx.begin(), loc_idx.begin()+3, cmp_px);
-    sort(loc_idx.begin()+3, loc_idx.begin()+6, cmp_px);
-    sort(loc_idx.begin()+6, loc_idx.end(), cmp_px);
+    sort(loc_idx.begin(), loc_idx.end(), cmp_cnt_py);
+    sort(loc_idx.begin(), loc_idx.begin()+3, cmp_cnt_px);
+    sort(loc_idx.begin()+3, loc_idx.begin()+6, cmp_cnt_px);
+    sort(loc_idx.begin()+6, loc_idx.end(), cmp_cnt_px);
 
-    x_min = max(loc_idx[1].first.x - 20, 0);
-    x_max = min(loc_idx[2].first.x + 20, IMAGE_WIDTH);
+    x_min = max(loc_idx[1].first[0].x - 20, 0);
+    x_max = min(loc_idx[2].first[0].x + 20, IMAGE_WIDTH);
     //x_max += (x_max - x_min) / 2.3;
-    y_min = max(max(loc_idx[0].first.y, loc_idx[2].first.y) - 20, 0);
+    y_min = max(max(loc_idx[0].first[0].y, loc_idx[2].first[0].y) - 20, 0);
 
     for (auto &li: loc_idx)
         seq.push_back(li.second);
@@ -294,12 +320,12 @@ bool Rune::get_red_seq(vector<int> &seq) {
         return false;
     }
 
-    vector<pair<Point, int> > loc_idx;
+    vector<pair<Point, int> > r_loc_idx;
     for (size_t i = 0; i < predictions.size(); i++)
-        loc_idx.push_back(pair<Point, int>(r_contours[predictions[i].first][0],
+        r_loc_idx.push_back(pair<Point, int>(r_contours[predictions[i].first][0],
                     predictions[i].second));
-    sort(loc_idx.begin(), loc_idx.end(), cmp_px);
-    for(const pair<Point, int> & pa : loc_idx){
+    sort(r_loc_idx.begin(), r_loc_idx.end(), cmp_px);
+    for(const pair<Point, int> & pa : r_loc_idx){
         seq.push_back(pa.second);
     }
     return true;
