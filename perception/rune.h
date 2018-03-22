@@ -9,6 +9,9 @@
 #include <vector>
 #include <cstring>
 #include <cassert>
+#include <chrono>
+#include <ratio>
+#include <ctime>
 #include "cv_config.h"
 #include "camera.h"
 
@@ -71,11 +74,20 @@ public:
      */
     bool get_red_seq(vector<int> &seq);
 
+    /**
+     * @brief get hit box (domain: 1-9). The function is blocking
+     *        and will return after RUNE_DETECT_TIME_SPAN seconds.
+     * @param cam ptr to our camera
+     * @return position to hit
+     */
+    int get_hit_pos(CameraBase * cam);
+
 private:
     int x_min;
     int x_max;
     int y_min;
     int y_max;
+    int cur_round_counter;
 
     Mat white_bin;
     Mat red_bin;
@@ -92,6 +104,11 @@ private:
     vector<vector<Point> >  w_contours; // white contours
     vector<vector<Point> >  r_contours; // red contours
 
+    int cur_red_digits[5];
+    int cur_white_digits[9];
+    int new_white_seq[9];
+    int new_red_seq[5];
+
     Point2f dst_points[4] = {Point2f(0, 0), Point2f(CROP_SIZE, 0),
                         Point2f(0, CROP_SIZE), Point2f(CROP_SIZE, CROP_SIZE)};
 
@@ -102,6 +119,8 @@ private:
     void digit_recog();
     void distill_red_dig();
     bool red_contour_detect();
+    void get_current_rune(CameraBase * cam);
+    int calc_position_to_hit();
     Mat pad_digit(const Mat & src_img);
     void red_batch_generate();
     Mat red_digit_process(const Mat & src_img);

@@ -12,6 +12,7 @@
 using namespace caffe;
 using namespace std;
 using namespace cv;
+using namespace std::chrono;
 
 bool cmp_x(Point &i, Point &j) { return i.x < j.x; }
 
@@ -20,6 +21,24 @@ bool cmp_y(Point &i, Point &j) { return i.y < j.y; }
 bool cmp_px(pair<Point, int> &i, pair<Point, int> &j) { return i.first.x < j.first.x; }
 
 bool cmp_py(pair<Point, int> &i, pair<Point, int> &j) { return i.first.y < j.first.y; }
+
+template<class T>
+int argmax(const T * data, size_t length) {
+    int max_idx = 0;
+    for (size_t i = 1; i < length; i++)
+        if (data[i] > data[max_idx])
+            max_idx = i;
+
+    return max_idx;
+}
+
+bool array_array_equal(int int_arr[], int int_arr_2[], int length){
+    for(int i = 0; i < length; i++){
+        if(int_arr[i] != int_arr_2[i])
+            return false;
+    }
+    return true;
+}
 
 Rune::Rune(string net_file, string param_file) {
 #ifdef CPU_ONLY
@@ -48,6 +67,81 @@ void Rune::update(CameraBase *cam) {
     imshow("raw image", raw_img);
     waitKey(1);
 #endif
+}
+
+int Rune::get_hit_pos(CameraBase * cam){
+    get_current_rune(cam);
+    return calc_position_to_hit();
+}
+
+int Rune::calc_position_to_hit(void){
+    if(array_array_equal(new_red_seq, cur_red_digits, 5)){
+        cur_round_counter += 1;
+    } else {
+        //new round; recognition error
+        cur_round_counter = 0;
+    }
+    for(int i = 0; i < 9; i++){
+        cur_white_digits[i] = new_white_seq[i];
+    }
+    for(int i = 0; i < 5; i++){
+        cur_red_digits[i] = new_red_seq[i];
+    }
+    //assume current red digits and white digits are accurate
+    int desired_number = cur_red_digits[cur_round_counter];
+    for(int i = 0; i < 9; i++){
+        if(cur_white_digits[i] == desired_number)
+            return i + 1;
+    }
+    std::cerr << "You should never get here!!!!!!" << std::endl;
+    return 1;
+}
+
+void Rune::get_current_rune(CameraBase * cam){
+    high_resolution_clock::time_point start_time = high_resolution_clock::now();
+    high_resolution_clock::time_point cur_time = high_resolution_clock::now();
+    duration<double> time_elapsed = duration_cast<duration<double>>(cur_time - start_time);
+    int ** red_matrix = new int*[5];
+    int ** white_matrix = new int*[9];
+    for(int i = 0; i < 5; i++){
+        red_matrix[i] = new int[9];
+        fill_n(red_matrix[i], 9, 0);
+    }
+    for(int i = 0; i < 9; i++){
+        white_matrix[i] = new int[9];
+        fill_n(white_matrix[i], 9, 0);
+    }
+    while(time_elapsed < duration<double>(RUNE_DETECT_TIME_SPAN)){
+        cur_time = high_resolution_clock::now();
+        time_elapsed = duration_cast<duration<double> >(cur_time - start_time);
+        vector<int> white_seq, red_seq;
+        this->update(cam);
+        bool success;
+        success = this->get_white_seq(white_seq);
+        if(!(success) || white_seq.size() < 9){
+            continue;
+        }
+        success = this->get_red_seq(red_seq);
+        if(!(success) || red_seq.size() < 5){
+            continue;
+        }
+        for(size_t i = 0; i < 9; i++){
+            if(white_seq[i] == 0)
+                continue; //there are no zeros!!
+            ++white_matrix[i][white_seq[i] - 1];
+        }
+        for(size_t i = 0; i < 5; i++){
+            if(red_seq[i] == 0)
+                continue;
+            ++red_matrix[i][red_seq[i] - 1];
+        }
+    }
+    for(int i = 0; i < 5; i++){
+        new_red_seq[i] = argmax(red_matrix[i], 9) + 1;
+    }
+    for(int i = 0; i < 9; i++){
+        new_white_seq[i] = argmax(white_matrix[i], 9) + 1;
+    }
 }
 
 void Rune::white_binarize() {
@@ -111,15 +205,6 @@ void Rune::batch_generate() {
         cv::bitwise_not(digit_img(cv::Rect(offset, offset, DIGIT_SIZE, DIGIT_SIZE)), digit_img);
         w_digits.push_back(digit_img);
     }
-}
-
-int argmax(float *data, size_t length) {
-    int max_idx = 0;
-    for (size_t i = 1; i < length; i++)
-        if (data[i] > data[max_idx])
-            max_idx = i;
-
-    return max_idx;
 }
 
 void Rune::network_inference(vector<pair<int, int> > &predictions,
@@ -204,7 +289,7 @@ bool Rune::get_red_seq(vector<int> &seq) {
     if(predictions.size() < 5){
         return false;
     }
-    
+
     vector<pair<Point, int> > loc_idx;
     for (size_t i = 0; i < predictions.size(); i++)
         loc_idx.push_back(pair<Point, int>(r_contours[predictions[i].first][0],
@@ -213,7 +298,7 @@ bool Rune::get_red_seq(vector<int> &seq) {
     for(const pair<Point, int> & pa : loc_idx){
         seq.push_back(pa.second);
     }
-    return true; 
+    return true;
 }
 
 bool Rune::red_contour_detect(void){
@@ -314,7 +399,7 @@ void Rune::distill_red_dig(void){
     split(raw_img, bgr);
     subtract(bgr[2], bgr[1], distilled_img);
     distilled_img = distilled_img(cv::Rect(x_min, 0,
-                min(distilled_img.cols, x_max)-x_min, y_min));
+                min(distilled_img.cols, x_max)-x_min, y_min - 15));
     //subtract(distilled_img, bgr[0] * 0.15, distilled_img);
     threshold(distilled_img, distilled_img, DISTILL_RED_TH, 255, THRESH_BINARY);
     dilate(distilled_img, distilled_img, Mat::ones(5, 3, CV_8UC1));
