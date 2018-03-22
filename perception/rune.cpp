@@ -268,10 +268,10 @@ bool Rune::get_white_seq(vector<int> &seq) {
     sort(loc_idx.begin()+3, loc_idx.begin()+6, cmp_px);
     sort(loc_idx.begin()+6, loc_idx.end(), cmp_px);
 
-    x_min = loc_idx[1].first.x - 20;
-    x_max = loc_idx[2].first.x + 20;
+    x_min = max(loc_idx[1].first.x - 20, 0);
+    x_max = min(loc_idx[2].first.x + 20, IMAGE_WIDTH);
     //x_max += (x_max - x_min) / 2.3;
-    y_min = max(loc_idx[0].first.y, loc_idx[2].first.y) - 25;
+    y_min = max(max(loc_idx[0].first.y, loc_idx[2].first.y) - 20, 0);
 
     for (auto &li: loc_idx)
         seq.push_back(li.second);
