@@ -111,6 +111,10 @@ int Rune::calc_position_to_hit(void){
         //new round; recognition error
         cur_round_counter = 0;
     }
+    if(cur_round_counter >= 5){
+        //guess you are debugging; set it to new round
+        cur_round_counter = 0;
+    }
     for(int i = 0; i < 9; i++){
         cur_white_digits[i] = new_white_seq[i];
     }
@@ -123,7 +127,7 @@ int Rune::calc_position_to_hit(void){
         if(cur_white_digits[i] == desired_number)
             return i + 1;
     }
-    std::cerr << "You should never get here!!!!!!" << std::endl;
+    std::cerr << "You should never get here!!!!!! 1-9 are not in white digits" << std::endl;
     return 1;
 }
 
@@ -168,10 +172,14 @@ void Rune::get_current_rune(CameraBase * cam){
     }
     for(int i = 0; i < 5; i++){
         new_red_seq[i] = argmax(red_matrix[i], 9) + 1;
+        delete[] red_matrix[i];
     }
     for(int i = 0; i < 9; i++){
         new_white_seq[i] = argmax(white_matrix[i], 9) + 1;
+        delete[] white_matrix[i];
     }
+    delete[] red_matrix;
+    delete[] white_matrix;
 }
 
 void Rune::white_binarize() {
