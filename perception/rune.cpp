@@ -268,10 +268,10 @@ bool Rune::get_white_seq(vector<int> &seq) {
     sort(loc_idx.begin()+3, loc_idx.begin()+6, cmp_px);
     sort(loc_idx.begin()+6, loc_idx.end(), cmp_px);
 
-    x_min = loc_idx[0].first.x;
-    x_max = loc_idx[2].first.x;
-    x_max += (x_max - x_min) / 2.3;
-    y_min = max(loc_idx[0].first.y, loc_idx[2].first.y);
+    x_min = loc_idx[1].first.x - 20;
+    x_max = loc_idx[2].first.x + 20;
+    //x_max += (x_max - x_min) / 2.3;
+    y_min = max(loc_idx[0].first.y, loc_idx[2].first.y) - 25;
 
     for (auto &li: loc_idx)
         seq.push_back(li.second);
@@ -399,7 +399,7 @@ void Rune::distill_red_dig(void){
     split(raw_img, bgr);
     subtract(bgr[2], bgr[1], distilled_img);
     distilled_img = distilled_img(cv::Rect(x_min, 0,
-                min(distilled_img.cols, x_max)-x_min, y_min - 15));
+                min(distilled_img.cols, x_max)-x_min, y_min));
     //subtract(distilled_img, bgr[0] * 0.15, distilled_img);
     threshold(distilled_img, distilled_img, DISTILL_RED_TH, 255, THRESH_BINARY);
     dilate(distilled_img, distilled_img, Mat::ones(5, 3, CV_8UC1));
