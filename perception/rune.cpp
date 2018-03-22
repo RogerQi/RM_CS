@@ -74,6 +74,10 @@ int Rune::get_hit_pos(CameraBase * cam){
     return calc_position_to_hit();
 }
 
+pair<float, float> Rune::get_hit_angle(CameraBase * cam){
+    get_current_rune(cam);
+}
+
 int Rune::calc_position_to_hit(void){
     if(array_array_equal(new_red_seq, cur_red_digits, 5)){
         cur_round_counter += 1;

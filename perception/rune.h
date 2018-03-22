@@ -82,6 +82,14 @@ public:
      */
     int get_hit_pos(CameraBase * cam);
 
+    /**
+     * @brief get angle to move to hit the desired digit.
+     * @param cam ptr to camera object
+     * @return data pair of angles. <pitch, yaw>. Angles are relative
+     *         to current angle
+     */
+    pair<float, float> get_hit_angle(CameraBase * cam);
+
 private:
     int x_min;
     int x_max;
