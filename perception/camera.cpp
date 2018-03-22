@@ -28,3 +28,9 @@ void CameraBase::get_img(Mat &dst) {
     _buffer.at(_read_index).copyTo(dst);
     _lock.unlock();
 }
+
+void CameraBase::start() {
+    _buffer[_read_index] = cam_read();
+    std::thread t(&CameraBase::set_img, this, 0);
+    t.detach();
+}

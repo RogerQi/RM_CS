@@ -35,6 +35,11 @@ public:
     void set_img(unsigned int sleep = 0);
 
     /**
+     * @brief start the camera in a sperate thread
+     * @return none
+     */
+    void start();
+    /**
      * @brief to be implemented according to the specs of a specific camera
      * @return Mat object read directly from the camera
      */
@@ -56,10 +61,7 @@ class SimpleCVCam: public CameraBase {
 public:
     SimpleCVCam() : CameraBase() {
         cap = VideoCapture(0);
-        cap >> _buffer[_read_index];
-        cap >> _buffer[_write_index];
-        std::thread t(&SimpleCVCam::set_img, this, 0);
-        t.detach();
+        start();
     }
 
     Mat cam_read() {
