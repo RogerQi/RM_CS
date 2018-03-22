@@ -130,7 +130,7 @@ private:
     void contour_detect();
     void batch_generate();
     void digit_recog();
-    void distill_red_dig();
+    bool distill_red_dig();
     bool red_contour_detect();
     void get_current_rune(CameraBase * cam);
     int calc_position_to_hit();

@@ -317,9 +317,7 @@ bool Rune::get_white_seq(vector<int> &seq) {
 }
 
 bool Rune::get_red_seq(vector<int> &seq) {
-    distill_red_dig();
-    bool ret_val = red_contour_detect();
-    if(!(ret_val))
+    if (!distill_red_dig() || !red_contour_detect())
         return false;
     red_batch_generate();
     vector<pair<int, int> > predictions;
@@ -374,15 +372,6 @@ bool Rune::red_contour_detect(void){
     return true;
 }
 
-Mat Rune::red_digit_process(const Mat & src_img){
-    Mat ret;
-    threshold(src_img, ret, 100, 255, cv::THRESH_BINARY);
-    //morphologyEx(ret, ret, MORPH_OPEN, Mat::ones(3, 3, CV_8UC1));
-    morphologyEx(ret, ret, MORPH_CLOSE, Mat::ones(2, 3, CV_8UC1));
-    dilate(ret, ret, Mat::ones(2, 2, CV_8UC1));
-    return ret;
-}
-
 Mat Rune::pad_digit(const Mat & src_img){
     assert(src_img.cols <= DIGIT_SIZE && src_img.rows <= DIGIT_SIZE);
     Mat painting = Mat::zeros(DIGIT_SIZE, DIGIT_SIZE, CV_8UC1);
@@ -419,7 +408,6 @@ void Rune::red_batch_generate(){
         cv::warpPerspective(distilled_img, digit_img, M, Size(w, h));
         double scale = (DIGIT_SIZE - 4) * 1.0 / max(w, h);
         cv::resize(digit_img, digit_img, Size(max(w*scale, 1.0), max(h*scale, 1.0)));
-        //digit_img = red_digit_process(digit_img);
         digit_img = pad_digit(digit_img);
         r_digits.push_back(digit_img);
 #ifdef DEBUG
@@ -432,13 +420,14 @@ void Rune::red_batch_generate(){
     }
 }
 
-void Rune::distill_red_dig(void){
+bool Rune::distill_red_dig(void){
     std::vector<Mat> bgr;
     split(raw_img, bgr);
     subtract(bgr[2], bgr[1], distilled_img);
     distilled_img = distilled_img(cv::Rect(x_min, 0,
                 min(distilled_img.cols, x_max)-x_min, y_min));
-    //subtract(distilled_img, bgr[0] * 0.15, distilled_img);
+    if (!distilled_img.cols || !distilled_img.rows)
+        return false;
     threshold(distilled_img, distilled_img, DISTILL_RED_TH, 255, THRESH_BINARY);
     dilate(distilled_img, distilled_img, Mat::ones(5, 3, CV_8UC1));
 #ifdef DEBUG
@@ -448,4 +437,5 @@ void Rune::distill_red_dig(void){
     imshow("cropped red digit", debug_img);
     waitKey(1);
 #endif
+    return true;
 }
