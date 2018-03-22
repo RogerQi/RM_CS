@@ -119,6 +119,12 @@ public:
      */
     header_t* get_header();
 
+    /**
+     * @brief given the length of the body data read from the header, parse
+     *        data from the body bytes
+     * @param length the length of the following body data
+     * @return true if succesully parsed data bytes
+     */
     bool process_body(uint16_t length);
 private:
     header_t    _header;

@@ -12,12 +12,15 @@ int main() {
     char msg[11] = {'I', 'R', 'M', 0, 4, 0, 0, 0x12, 0, '\x01', 0};
 
     proto->append_crc8(msg, 7);
+    printf("%hhu\n\n\n\n\n", msg[6]);
     proto->append_crc8(msg+7, 4);
     while (true) {
-        ser->write_bytes(msg, 11);
+        //ser->write_bytes(msg, 11);
         header_t *hd;
         if ((hd = proto->get_header())) {
-            proto->process_body(hd->data_length);
+            cout << "header read complete" << endl;
+            if (proto->process_body(hd->data_length))
+                cout << "data proccessed success" << endl;
         }
         else {
             ser->flush();
