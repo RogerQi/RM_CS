@@ -20,6 +20,8 @@ include_directories(${CMAKE_SOURCE_DIR}/communication)
 
 if (USE_GPU)
     message("Caffe running in GPU Mode")
+    find_package(CUDA REQUIRED)
+    include_directories(${CUDA_INCLUDE_DIRS})
 else()
     add_definitions(-DCPU_ONLY=1)
     message("Caffe running in CPU Mode")
