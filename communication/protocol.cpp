@@ -49,7 +49,7 @@ void Protocol::append_crc8(void *ptr, uint16_t length) {
 header_t* Protocol::get_header() {
     uint16_t recv = _ser->read_bytes(&_header, sizeof(header_t));
 #ifdef DEBUG
-    char *rxbuf = (char*)_header;
+    char *rxbuf = (char*)&_header;
     if (recv) {
         for (size_t i = 0; i < recv; i++)
             printf("%hhu ", rxbuf[i]);
