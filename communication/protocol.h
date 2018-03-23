@@ -133,11 +133,17 @@ public:
     data_u *get_body();
 
     /**
-     * @brief process the latest read message and send reponse according to 
-     *        the recieved data
+     * @brief process the latest read message and calculate for the response 
+     *        and store the response
      * @return none
      */
-    void process_and_transmit();
+    void process_body();
+
+    /**
+     * @brief transmit the data in the current transmit buffer
+     * @return none
+     */
+    void transmit();
 private:
     header_t    _header;
     data_u      _body_data;
