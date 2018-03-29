@@ -48,6 +48,7 @@ Rune::Rune(string net_file, string param_file) {
 #ifdef CPU_ONLY
     Caffe::set_mode(Caffe::CPU);
 #else
+    Caffe::DeviceQuery();
     Caffe::set_mode(Caffe::GPU);
     Caffe::SetDevice(0);
 #endif
@@ -247,13 +248,8 @@ void Rune::batch_generate() {
 
 void Rune::network_inference(vector<pair<int, int> > &predictions,
         vector<Mat> & desired_digits, vector<vector<Point> > & desired_contours){
-#ifdef CPU_ONLY
     float *input_data = input_layer->mutable_cpu_data();
     float *output_data = output_layer->mutable_cpu_data();
-#else
-    float *input_data = input_layer->mutable_gpu_data();
-    float *output_data = output_layer->mutable_gpu_data();
-#endif
     for (auto &dig: desired_digits) {
         Mat channel(DIGIT_SIZE, DIGIT_SIZE, CV_32FC1, input_data);
         dig.convertTo(channel, CV_32FC1);
