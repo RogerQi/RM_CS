@@ -11,7 +11,7 @@ CameraBase::CameraBase() {
 
 void CameraBase::set_img(unsigned int sleep) {
     while (true) {
-        _buffer[_write_index] = cam_read(); 
+        _buffer[_write_index] = cam_read();
         _lock.lock();
         unsigned short tmp_index;
         tmp_index = _write_index;
@@ -31,6 +31,6 @@ void CameraBase::get_img(Mat &dst) {
 
 void CameraBase::start() {
     _buffer[_read_index] = cam_read();
-    std::thread t(&CameraBase::set_img, this, 0);
+    std::thread t(&CameraBase::set_img, this, 60);
     t.detach();
 }

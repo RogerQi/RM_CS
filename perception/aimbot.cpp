@@ -194,9 +194,11 @@ vector<RotatedRect> ir_aimbot::detect_armor(vector<RotatedRect> & filtered_light
         RotatedRect light_1 = filtered_light_bars[i];
         for(size_t j = i + 1; j < filtered_light_bars.size(); j++){
             RotatedRect light_2 = filtered_light_bars[j];
+            /*
             if(fabs(light_1.angle - light_2.angle) > light_max_angle_diff){
                 continue;
             }
+            */
             float light_1_height = max_of_two(light_1.size.height, light_1.size.width);
             float light_2_height = max_of_two(light_2.size.height, light_2.size.width);
             float bbox_h = max_of_two(light_1_height, light_2_height);
@@ -210,9 +212,9 @@ vector<RotatedRect> ir_aimbot::detect_armor(vector<RotatedRect> & filtered_light
             float bbox_x = (light_1.center.x + light_2.center.x) / 2.0;
             float bbox_y = (light_1.center.y + light_2.center.y) / 2.0;
             float bbox_w = light_dis * 1.2;
-            if(fabs(bbox_angle) < armor_max_angle){ //constraint 1: armor angle
-                if((bbox_w / bbox_h) < armor_max_aspect_ratio){ //constraint 2: armor aspect ratio
-                    if((bbox_w * bbox_h) > armor_min_area){ //constraint 3: armor can't be too small
+            if(y_offset_sq < 400){ //y offset can be too far
+                if(bbox_w * bbox_h > 40){
+                    if(bbox_w / bbox_h < 6){
                         RotatedRect this_armor;
                         this_armor.center = Point2f(bbox_x, bbox_y);
                         this_armor.size = Size2f(bbox_w, bbox_h);
@@ -221,6 +223,19 @@ vector<RotatedRect> ir_aimbot::detect_armor(vector<RotatedRect> & filtered_light
                     }
                 }
             }
+            /*
+            if(fabs(bbox_angle) < armor_max_angle){ //constraint 1: armor angle
+                if((bbox_w / bbox_h) < armor_max_aspect_ratio){ //constraint 2: armor aspect ratio
+                    if((bbox_w * bbox_h) > armor_min_area){ //constraint 3: armor can't be too small
+                    RotatedRect this_armor;
+                    this_armor.center = Point2f(bbox_x, bbox_y);
+                    this_armor.size = Size2f(bbox_w, bbox_h);
+                    this_armor.angle = bbox_angle;
+                    ret.push_back(this_armor);
+                    }
+                }
+            }
+            */
         }
     }
     return ret;
