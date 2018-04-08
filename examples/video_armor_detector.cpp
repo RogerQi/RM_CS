@@ -11,6 +11,8 @@ int main(void){
     string file_path = "blue_1.mp4";
     CameraBase * cam = new VideoFeed(file_path);
     ir_aimbot detector("blue");
+    int code = cv::VideoWriter::fourcc('M', 'J', 'P', 'G');
+    cv::VideoWriter save_stream("rendered.avi", code, 30, Size(1920, 1080));
     while(cam->is_alive()){
         std::vector<RotatedRect> ret = detector.get_hitbox(cam);
         Mat frame_shower = detector.get_cur_frame();
@@ -24,8 +26,10 @@ int main(void){
             ellipse(frame_shower, visual_rects[i], color, 2, 8);
             //std::cout << "Cur armor center: (" << ret[i].center_x << ", " << ret[i].center_y << ")" << std::endl;
         }
+        save_stream << frame_shower;
         imshow("Go", frame_shower);
         waitKey(1);
     }
+    save_stream.release();
     return 0;
 }

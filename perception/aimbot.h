@@ -127,7 +127,7 @@ public:
      * @brief
      * @return get current frame updated by hit box (for debugging purpose only)
      */
-    inline Mat & get_cur_frame(void) { return cur_frame; }
+    inline Mat & get_cur_frame(void) { return ori_cur_frame; }
 
 private:
     /* Caffe NN utilities */
@@ -135,7 +135,7 @@ private:
     caffe::Blob<float>      *input_layer;
     caffe::Blob<float>      *output_layer;
 
-    Mat cur_frame;
+    Mat cur_frame, ori_cur_frame;
 
     string my_color;
 

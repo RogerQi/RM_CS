@@ -147,7 +147,9 @@ void ir_aimbot::preprocess_frame(Mat & cur_frame_distilled, const Mat & cur_fram
 vector<RotatedRect> ir_aimbot::get_hitbox(CameraBase * my_cam) {
     //get cur image from camera
     Mat cur_frame_distilled;
-    my_cam->get_img(cur_frame);
+    //my_cam->get_img(cur_frame);
+    cur_frame = my_cam->cam_read();
+    cur_frame.copyTo(ori_cur_frame);
     Mat crop_detect, crop_distilled;
     resize(cur_frame, crop_detect, Size(320, 180));
     #ifdef DEBUG
@@ -179,7 +181,14 @@ vector<RotatedRect> ir_aimbot::get_hitbox(CameraBase * my_cam) {
         waitKey(1);
     #endif
     vector<RotatedRect> target_armors = detect_armor(light_bars, cur_frame);
-    return filter_armor(target_armors);
+    vector<RotatedRect> final_armor = filter_armor(target_armors);
+    for(size_t i = 0; i < final_armor.size(); ++i){
+        final_armor[i].center.x -= IMAGE_WIDTH / 2;
+        final_armor[i].center.y -= IMAGE_HEIGHT / 2;
+        final_armor[i].center.x += poi.x;
+        final_armor[i].center.y += poi.y;
+    }
+    return final_armor;
 }
 
 vector<RotatedRect> ir_aimbot::detect_lights(Mat & distilled_color){

@@ -17,7 +17,7 @@ public:
     VideoFeed(string video_file_name) : CameraBase() {
         alive = true;
         cap = VideoCapture(video_file_name);
-        start();
+        //start();
     }
 
     Mat cam_read() {
