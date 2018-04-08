@@ -1,6 +1,9 @@
 #ifndef AIMBOT_H_
 #define AIMBOT_H_
 
+#include <caffe/caffe.hpp>
+#include <caffe/blob.hpp>
+#include <caffe/util/io.hpp>
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include <string>
@@ -12,6 +15,12 @@
 
 using std::string;
 using namespace cv;
+using namespace caffe;
+
+#define MODEL_BATCH_SIZE     30
+#define FEEDING_IMG_WIDTH    100
+#define CLASSIFIER_THRESHOLD 0.41
+#define FEEDING_IMG_HEIGHT   100
 
     /* Common Functions */
 
@@ -55,6 +64,14 @@ Point2f _get_point_of_interest(const Mat & crop_distilled);
  * @brief dynamically crop image
  */
 Mat _image_cropper(const Mat & frame, Point2f poi);
+
+/**
+ * @brief make gray perspective transform of armor board for classifiers
+ * @param src_img source image
+ * @param roi rotatedrect to be cropped
+ * @return square cropped image of FEEDING_IMG_HEIGHT * FEEDING_IMG_WIDTH
+ */
+Mat armor_perspective_transform(const Mat & src_img, const RotatedRect & roi);
 
 /*
  * An abstract base class for assisted aiming
@@ -113,6 +130,11 @@ public:
     inline Mat & get_cur_frame(void) { return cur_frame; }
 
 private:
+    /* Caffe NN utilities */
+    caffe::Net<float>       *net;
+    caffe::Blob<float>      *input_layer;
+    caffe::Blob<float>      *output_layer;
+
     Mat cur_frame;
 
     string my_color;

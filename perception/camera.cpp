@@ -31,6 +31,6 @@ void CameraBase::get_img(Mat &dst) {
 
 void CameraBase::start() {
     _buffer[_read_index] = cam_read();
-    std::thread t(&CameraBase::set_img, this, 60);
+    std::thread t(&CameraBase::set_img, this, 150);
     t.detach();
 }

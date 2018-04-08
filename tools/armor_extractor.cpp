@@ -46,7 +46,7 @@ void save_rotated_rect(const Mat & a_frame, const RotatedRect & the_rotated_rect
 
 void make_data(string file_path){
     CameraBase * cam = new VideoFeed(file_path);
-    ir_aimbot detector("blue");
+    ir_aimbot detector("red");
     int iter = -1;
     while(cam->is_alive()){
         iter++;
@@ -68,6 +68,6 @@ int main(void){
         std::stringstream cur_path;
         cur_path << iter << ".mp4";
         make_data(cur_path.str());
+        iter++;
     }
-    iter++;
 }

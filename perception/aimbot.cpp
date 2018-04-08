@@ -1,7 +1,4 @@
 #include "aimbot.h"
-#include <caffe/caffe.hpp>
-#include <caffe/blob.hpp>
-#include <caffe/util/io.hpp>
 
 void distill_color(const Mat & src_img, Mat & dst_img, string color_type) {
     std::vector<cv::Mat> bgr;
@@ -12,6 +9,22 @@ void distill_color(const Mat & src_img, Mat & dst_img, string color_type) {
         //assume it's blue
         cv::subtract(bgr[0], bgr[2], dst_img);
     }
+}
+
+Mat armor_perspective_transform(const Mat & src_img, const RotatedRect & roi){
+    Mat cropped, M;
+    Point2f dst_points[4] = {Point2f(0, 0), Point2f(0, 100),
+                        Point2f(100, 0), Point2f(100, 100)};
+    Point2f pts[4];
+    roi.points(pts);
+    if (pts[0].x > pts[1].x)
+        swap(pts[0], pts[1]);
+    if (pts[2].x > pts[3].x)
+        swap(pts[2], pts[3]);
+    M = getPerspectiveTransform(pts, dst_points);
+    warpPerspective(src_img, cropped, M, Size(100, 100));
+    cvtColor(cropped, cropped, COLOR_BGR2GRAY);
+    return cropped;
 }
 
 void draw_rotated_rect(Mat & mat_to_draw, RotatedRect rect_to_draw) {
@@ -41,17 +54,17 @@ Point2f _get_point_of_interest(const Mat & crop_distilled) {
     if(contours.size() == 0)
         //no contours are found
         return middle_pt;
-    
+
     vector<Moments> mu(contours.size());
     for(int i = 0; i < contours.size(); i++)
         mu[i] = moments(contours[i], false);
-   
+
 
     ///  Get the mass centers:
     vector<Point2f> mc( contours.size() );
-    for( int i = 0; i < contours.size(); i++ ) 
+    for( int i = 0; i < contours.size(); i++ )
         mc[i] = Point2f(mu[i].m10/mu[i].m00 , mu[i].m01/mu[i].m00);
-    
+
     float dw = ORIG_IMAGE_WIDTH * 1.0 / crop_distilled.cols;
     float dh = ORIG_IMAGE_HEIGHT * 1.0 / crop_distilled.rows;
     Point2f nearest_pt = mc[0];
@@ -93,11 +106,27 @@ Mat _image_cropper(const Mat & frame, Point2f poi) {
 }
 
 ir_aimbot::ir_aimbot(string color_type_str){
+    string net_file = "model/resnet18.prototxt";
+    string param_file = "model/armor_filter.caffemodel";
+    #ifdef CPU_ONLY
+        Caffe::set_mode(Caffe::CPU);
+    #else
+        Caffe::DeviceQuery();
+        Caffe::set_mode(Caffe::GPU);
+        Caffe::SetDevice(0);
+    #endif
+    net = new Net<float>(net_file.c_str(), caffe::TEST);
+    net->CopyTrainedLayersFrom(param_file.c_str());
+    input_layer = net->input_blobs()[0];
+    input_layer->Reshape(MODEL_BATCH_SIZE, 1, 100, 100);
+    net->Reshape();
+    input_layer = net->input_blobs()[0];
+    output_layer = net->output_blobs()[0];
     my_color = color_type_str;
     my_distillation_threshold = blue_threshold;
     if(my_color == "red")
         my_distillation_threshold = red_threshold;
-    
+
 }
 
 ir_aimbot::~ir_aimbot(){
@@ -207,7 +236,7 @@ vector<RotatedRect> ir_aimbot::detect_armor(vector<RotatedRect> & filtered_light
             float bbox_y = (light_1.center.y + light_2.center.y) / 2.0;
             float bbox_w = light_dis * 1.2;
             if(y_offset_sq < 400 &&   //y offset can be too far
-               bbox_w * bbox_h > 40 &&  
+               bbox_w * bbox_h > 40 &&
                bbox_w / bbox_h < 6) {
                 RotatedRect this_armor;
                 this_armor.center = Point2f(bbox_x, bbox_y);
@@ -221,6 +250,31 @@ vector<RotatedRect> ir_aimbot::detect_armor(vector<RotatedRect> & filtered_light
 }
 
 vector<RotatedRect> ir_aimbot::filter_armor(const vector<RotatedRect> & armor_obtained){
-    //do nothing yet
-    return armor_obtained;
+    vector<RotatedRect> filtered;
+    float *input_data = input_layer->mutable_cpu_data();
+    float *output_data = output_layer->mutable_cpu_data();
+    for (const RotatedRect & armor_bd: armor_obtained) {
+        Mat channel(FEEDING_IMG_HEIGHT, FEEDING_IMG_WIDTH, CV_32FC1, input_data);
+        Mat normalized_armor = armor_perspective_transform(cur_frame, armor_bd);
+        normalized_armor.convertTo(channel, CV_32FC1);
+        //channel /= 255;
+        input_data += FEEDING_IMG_HEIGHT * FEEDING_IMG_WIDTH;
+    }
+
+    net->Forward();
+
+    for (size_t i = 0; i < armor_obtained.size(); i++) {
+        vector<float> prob;
+        //std::cout << "Output layer's channel num: " << output_layer->channels() << std::endl;
+        //std::cout << "Prob 0: " << output_data[0] << std::endl;
+        //std::cout << "Prob 1: " << output_data[1] << std::endl;
+        for(int j = 0; j < output_layer->channels(); j++){
+            prob.push_back(output_data[j]);
+        }
+        output_data += output_layer->channels();
+        if(prob[1] > CLASSIFIER_THRESHOLD){
+            filtered.push_back(armor_obtained[i]);
+        }
+    }
+    return filtered;
 }
