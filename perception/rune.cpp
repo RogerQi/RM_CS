@@ -106,61 +106,56 @@ pair<float, float> Rune::get_hit_angle(CameraBase * cam){
 }
 
 int Rune::calc_position_to_hit(void){
-    if(array_array_equal(new_red_seq, cur_red_digits, 5)){
+    if(array_array_equal(new_red_seq, cur_red_digits, 5))
         cur_round_counter += 1;
-    } else {
+    else 
         //new round; recognition error
         cur_round_counter = 0;
-    }
-    if(cur_round_counter >= 5){
+    
+    if(cur_round_counter >= 5)
         //guess you are debugging; set it to new round
         cur_round_counter = 0;
-    }
-    for(int i = 0; i < 9; i++){
+
+    for(int i = 0; i < 9; i++)
         cur_white_digits[i] = new_white_seq[i];
-    }
-    for(int i = 0; i < 5; i++){
+    for(int i = 0; i < 5; i++)
         cur_red_digits[i] = new_red_seq[i];
-    }
+
     //assume current red digits and white digits are accurate
     int desired_number = cur_red_digits[cur_round_counter];
-    for(int i = 0; i < 9; i++){
+    for(int i = 0; i < 9; i++)
         if(cur_white_digits[i] == desired_number)
             return i + 1;
-    }
+   
     std::cerr << "You should never get here!!!!!! 1-9 are not in white digits" << std::endl;
     return 1;
 }
 
-void Rune::get_current_rune(CameraBase * cam){
+void Rune::get_current_rune(CameraBase * cam) {
     high_resolution_clock::time_point start_time = high_resolution_clock::now();
     high_resolution_clock::time_point cur_time = high_resolution_clock::now();
     duration<double> time_elapsed = duration_cast<duration<double>>(cur_time - start_time);
-    int ** red_matrix = new int*[5];
-    int ** white_matrix = new int*[9];
-    for(int i = 0; i < 5; i++){
-        red_matrix[i] = new int[9];
+    int red_matrix[5][9];
+    int white_matrix[9][9];
+
+    for(int i = 0; i < 5; i++)
         fill_n(red_matrix[i], 9, 0);
-    }
-    for(int i = 0; i < 9; i++){
-        white_matrix[i] = new int[9];
+    for(int i = 0; i < 9; i++)
         fill_n(white_matrix[i], 9, 0);
-    }
-    while(time_elapsed < duration<double>(RUNE_DETECT_TIME_SPAN)){
+    
+    while(time_elapsed < duration<double>(RUNE_DETECT_TIME_SPAN)) {
         cur_time = high_resolution_clock::now();
         time_elapsed = duration_cast<duration<double> >(cur_time - start_time);
         vector<int> white_seq, red_seq;
         this->update(cam);
         bool success;
         success = this->get_white_seq(white_seq);
-        if(!(success) || white_seq.size() < 9){
+        if(!(success) || white_seq.size() < 9)
             continue;
-        }
         success = this->get_red_seq(red_seq);
-        if(!(success) || red_seq.size() < 5){
+        if(!(success) || red_seq.size() < 5)
             continue;
-        }
-        for(size_t i = 0; i < 9; i++){
+        for(size_t i = 0; i < 9; i++) {
             if(white_seq[i] == 0)
                 continue; //there are no zeros!!
             ++white_matrix[i][white_seq[i] - 1];
@@ -171,16 +166,10 @@ void Rune::get_current_rune(CameraBase * cam){
             ++red_matrix[i][red_seq[i] - 1];
         }
     }
-    for(int i = 0; i < 5; i++){
+    for(int i = 0; i < 5; i++)
         new_red_seq[i] = argmax(red_matrix[i], 9) + 1;
-        delete[] red_matrix[i];
-    }
-    for(int i = 0; i < 9; i++){
+    for(int i = 0; i < 9; i++)
         new_white_seq[i] = argmax(white_matrix[i], 9) + 1;
-        delete[] white_matrix[i];
-    }
-    delete[] red_matrix;
-    delete[] white_matrix;
 }
 
 void Rune::white_binarize() {
@@ -304,7 +293,6 @@ bool Rune::get_white_seq(vector<int> &seq) {
 
     x_min = max(loc_idx[1].first[0].x - 20, 0);
     x_max = min(loc_idx[2].first[0].x + 20, IMAGE_WIDTH);
-    //x_max += (x_max - x_min) / 2.3;
     y_min = max(max(loc_idx[0].first[0].y, loc_idx[2].first[0].y) - 20, 0);
 
     for (auto &li: loc_idx)
@@ -338,28 +326,25 @@ bool Rune::red_contour_detect(void){
     vector<vector<Point> > temp_contour;
     r_contours.clear();
     findContours(distilled_img, temp_contour, hierarchy, cv::RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
-    if(temp_contour.size() < 5){
+    if(temp_contour.size() < 5)
         return false;
-    }
-    for(auto it = temp_contour.begin(); it != temp_contour.end(); ++it){
+    
+    for(auto it = temp_contour.begin(); it != temp_contour.end(); ++it) {
         vector<Point> cnt = *(it);
         RotatedRect rect = minAreaRect(cnt);
-        if(rect.size.area() < MIN_RED_DIG_AREA){
+        if(rect.size.area() < MIN_RED_DIG_AREA)
             continue;
-        }
         else {
             Point2f pts[4];
             rect.points(pts);
             vector<Point> temp;
-            for(const Point2f & pt : pts){
+            for(const Point2f & pt : pts)
                 temp.push_back(pt);
-            }
             r_contours.push_back(temp);
         }
     }
-    if(r_contours.size() < 5){
+    if(r_contours.size() < 5)
         return false;
-    }
 #ifdef DEBUG
     cv::drawContours(debug_img, r_contours, -1, Scalar(0, 255, 0), 3);
     imshow("red detection", debug_img);
