@@ -1,4 +1,7 @@
 #include "aimbot.h"
+#include <caffe/caffe.hpp>
+#include <caffe/blob.hpp>
+#include <caffe/util/io.hpp>
 
 void distill_color(const Mat & src_img, Mat & dst_img, string color_type) {
     std::vector<cv::Mat> bgr;
