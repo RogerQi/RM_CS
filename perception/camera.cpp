@@ -6,7 +6,7 @@
 CameraBase::CameraBase() {
     _buffer.resize(2);
     _write_index = 0;
-    _read_index = 0;
+    _read_index = 1;
 }
 
 void CameraBase::set_img(unsigned int sleep) {
