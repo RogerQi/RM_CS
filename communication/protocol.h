@@ -2,8 +2,11 @@
 #define _PROTOCOL_
 
 #include "serial.h"
+#include <thread>
+#include <chrono>
 
-#define MAX_BUFFER_LENGTH 30
+#define MAX_BUFFER_LENGTH    30
+#define PROTOCOL_SLEEP_TIME  10 // in ms
 #define IRM "IRM"  // Ascii value for "M R I Null"
 
 static const unsigned char k_crc8 = 0xff;
@@ -36,7 +39,7 @@ static constexpr unsigned char crc8_table[256] = {
 
 typedef enum {
     GIMBAL_CONTROL = 0x00A1,
-    
+
     IDLE_MSG = 0x0000,
     AIM_REQUEST = 0x0012,
 
@@ -73,20 +76,20 @@ typedef struct {
 
 typedef union {
     gimbal_control_t    gimbal_control;
-    
+
     idle_msg_t          idle_msg;
     aim_request_t       aim_request;
 }   data_u;
 
 class Protocol {
 public:
-    
+
     /**
      * @brief constructor of Protocol
      * @param ser a pointer to a CSerial object instance
      */
     Protocol(CSerial *ser);
-    
+
     /**
      * @brief destructor of Protocol
      */
@@ -100,7 +103,7 @@ public:
      * @return calculated crc8 verification byte
      */
     char get_crc8(void *ptr, uint16_t length, char crc8);
-    
+
     /**
      * @brief check if the message is corrupted
      * @param ptr pointer to byte array containing the last crc byte
@@ -133,7 +136,7 @@ public:
     data_u *get_body();
 
     /**
-     * @brief process the latest read message and calculate for the response 
+     * @brief process the latest read message and calculate for the response
      *        and store the response
      * @return none
      */
@@ -144,6 +147,12 @@ public:
      * @return none
      */
     void transmit();
+
+    /**
+     * non-blocking start for protocol. Should be called in main.
+     * @brief
+     */
+    void run();
 private:
     header_t    _header;
     data_u      _body_data;
@@ -152,6 +161,8 @@ private:
     CSerial     *_ser;
 
     void pack_data(void *ptr, uint16_t length);
+
+    void main_process();
 };
 
 #endif

@@ -21,7 +21,7 @@ char Protocol::get_crc8(void *ptr, uint16_t length, char crc8) {
 
     while (length--) {
         index = crc8 ^ *data++;
-        crc8 = crc8_table[(uint8_t)index]; 
+        crc8 = crc8_table[(uint8_t)index];
     }
     return crc8;
 }
@@ -30,7 +30,7 @@ bool Protocol::check_crc8(void *ptr, uint16_t length) {
     char *data = (char*)ptr;
 
     if (length <= 2 || !data) {
-        cout << "NULL point encoutered or data length too short!" << endl; 
+        cout << "NULL point encoutered or data length too short!" << endl;
         return false;
     }
     return (get_crc8(ptr, length - 1, k_crc8) == data[length - 1]);
@@ -40,7 +40,7 @@ void Protocol::append_crc8(void *ptr, uint16_t length) {
     char *data = (char*)ptr;
 
     if (length <= 2 || !data) {
-        cout << "NULL point encoutered or data length too short!" << endl; 
+        cout << "NULL point encoutered or data length too short!" << endl;
         return;
     }
     data[length - 1] = get_crc8(ptr, length - 1, k_crc8);
@@ -67,7 +67,7 @@ header_t* Protocol::get_header() {
         _ser->flush();
         return NULL;
     }
-    
+
     if (strcmp(_header.irm, IRM)) {
         _ser->flush();
         return NULL;
@@ -105,9 +105,9 @@ data_u* Protocol::get_body() {
         _ser->flush();
         return NULL;
     }
-    
+
     memcpy(&_body_data, _rxbuf, sizeof(data_u));
-    return &_body_data; 
+    return &_body_data;
 }
 
 void Protocol::process_body() {
@@ -143,4 +143,19 @@ void Protocol::transmit() {
         printf("\n");
 #endif
     }
+}
+
+void Protocol::main_process() {
+    while (1) {
+        if (this->get_header() && this->get_body())
+            this->process_body();
+        this->transmit();
+        std::this_thread::sleep_for(std::chrono::milliseconds(PROTOCOL_SLEEP_TIME));
+        _ser->flush();
+    }
+}
+
+void Protocol::run() {
+    std::thread t(&Protocol::main_process, this);
+    t.detach();
 }
