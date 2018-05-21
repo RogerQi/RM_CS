@@ -8,6 +8,7 @@ option(USE_GPU "set to ON to use GPU" OFF)
 option(DEBUG "set to ON to show debug information and image plot" OFF)
 
 add_compile_options(-std=c++11)
+add_compile_options(-g)
 
 find_package(OpenCV REQUIRED)
 find_package(Caffe REQUIRED)
