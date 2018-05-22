@@ -207,6 +207,15 @@ public:
     void process_body();
 
     /**
+     * @brief calculate header and crcs given body data 
+     * @param data      entire data buffer pointer
+     * @param length    length of the body message
+     * @note data pointer should be at the head of the header and body
+     *  message should be located following headers
+     */
+    void pack_data(uint8_t *data, uint16_t length);
+
+    /**
      * @brief transmit the data in the current transmit buffer
      * @return none
      */
@@ -226,8 +235,8 @@ private:
     uint8_t     _txbuf[MAX_BUFFER_LENGTH];
     CSerial     *_ser;
 
-    void pack_data(uint16_t length);
 
+    void pack_data(uint16_t length);
     void main_process();
 };
 

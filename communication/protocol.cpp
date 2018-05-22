@@ -56,7 +56,7 @@ bool Protocol::check_crc8(void *ptr, uint16_t length) {
 
 bool Protocol::check_crc16(void *ptr, uint16_t length) {
     uint8_t *data = (uint8_t*)ptr;
-    uint16_t crc16 = *(uint16_t*)(data+length-2);
+    uint16_t crc16 = *(uint16_t*)(data + length - LEN_CRC16);
 
     if (length <= 2 || !data) {
         cout << "NULL point encoutered or data length too short!" << endl;
@@ -77,12 +77,13 @@ void Protocol::append_crc8(void *ptr, uint16_t length) {
 
 void Protocol::append_crc16(void *ptr, uint16_t length) {
     uint8_t *data = (uint8_t*)ptr;
+    uint16_t *crc16 = (uint16_t*)(data + length - LEN_CRC16);
 
     if (length <= 2 || !data) {
         cout << "NULL point encoutered or data length too short!" << endl;
         return;
     }
-    data[length - 2] = get_crc16(ptr, length - 2, k_crc16);
+    *crc16 = get_crc16(ptr, length - 2, k_crc16);
 }
 
 header_t* Protocol::get_header() {
@@ -109,8 +110,16 @@ header_t* Protocol::get_header() {
     return _rx_header;
 }
 
+void Protocol::pack_data(uint8_t *data, uint16_t length) {
+    header_t *tx_hd = (header_t*)data;
+    tx_hd->sof = TX2_SOF;
+    tx_hd->data_length = length;
+    append_crc8(data, sizeof(header_t));
+    append_crc16(data, sizeof(header_t) + tx_hd->data_length);
+}
+
 void Protocol::pack_data(uint16_t length) {
-    _tx_header->data_length = length + LEN_CRC16;
+    _tx_header->data_length = length;
     append_crc8(_txbuf, sizeof(header_t));
     append_crc16(_txbuf, sizeof(header_t) + _tx_header->data_length);
 }
@@ -174,9 +183,10 @@ void Protocol::transmit() {
 
 void Protocol::main_process() {
     while (1) {
-        if (this->get_header() && this->get_body())
+        if (this->get_header() && this->get_body()) {
             this->process_body();
-        this->transmit();
+            this->transmit();
+        }
         std::this_thread::sleep_for(std::chrono::milliseconds(PROTOCOL_SLEEP_TIME));
     }
 }
