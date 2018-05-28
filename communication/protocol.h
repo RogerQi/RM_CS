@@ -11,6 +11,7 @@
 
 #define LEN_CRC8            1
 #define LEN_CRC16           2
+#define LEN_CMD             2
 
 static const uint16_t k_crc16 = 0xffff;
 static constexpr uint16_t crc16_table[256] = {
@@ -92,6 +93,7 @@ typedef enum {
 typedef struct {
     uint8_t     sof;
     uint16_t    data_length;
+    uint8_t     seq;
     uint8_t     crc8;
 } __attribute__((packed)) header_t;
 

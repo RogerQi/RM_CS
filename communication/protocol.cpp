@@ -113,20 +113,20 @@ header_t* Protocol::get_header() {
 void Protocol::pack_data(uint8_t *data, uint16_t length) {
     header_t *tx_hd = (header_t*)data;
     tx_hd->sof = TX2_SOF;
-    tx_hd->data_length = length;
+    tx_hd->seq = 0x00;
+    tx_hd->data_length = length - LEN_CRC16 - LEN_CMD;
     append_crc8(data, sizeof(header_t));
-    append_crc16(data, sizeof(header_t) + tx_hd->data_length);
+    append_crc16(data, sizeof(header_t) + length);
 }
 
 void Protocol::pack_data(uint16_t length) {
-    _tx_header->data_length = length;
-    append_crc8(_txbuf, sizeof(header_t));
-    append_crc16(_txbuf, sizeof(header_t) + _tx_header->data_length);
+    pack_data(_txbuf, length);
 }
 
 data_u* Protocol::get_body() {
-    while (_ser->bytes_available() < _rx_header->data_length) {}
-    uint16_t recv = _ser->read_bytes(_rx_body, _rx_header->data_length);
+    uint16_t body_length = _rx_header->data_length + LEN_CMD + LEN_CRC16;
+    while (_ser->bytes_available() < body_length) {}
+    uint16_t recv = _ser->read_bytes(_rx_body, body_length);
 #ifdef DEBUG
     if (recv) {
         cout << "body received:" << endl;
@@ -138,7 +138,7 @@ data_u* Protocol::get_body() {
         cout << "no body received" << endl;
     }
 #endif
-    if (!check_crc16(_rxbuf, sizeof(header_t) + _rx_header->data_length)) {
+    if (!check_crc16(_rxbuf, sizeof(header_t) + body_length)) {
         _ser->flush();
         return NULL;
     }
@@ -155,10 +155,10 @@ void Protocol::process_body() {
 
             }
             else if (_rx_body->aim_request.mode == AUTOAIM) {
-                gimbal_control_t *gc = (gimbal_control_t*)_tx_body;
-                gc->command_id = GIMBAL_CONTROL;
-                gc->pitch_ref = 9;
-                gc->yaw_ref = 10;
+                _tx_body->gimbal_control.command_id = GIMBAL_CONTROL;
+                // TODO: change those hard coded value to values read from perception libs
+                _tx_body->gimbal_control.pitch_ref = 9;
+                _tx_body->gimbal_control.yaw_ref = 10;
                 pack_data(sizeof(gimbal_control_t));
             }
             else
@@ -171,10 +171,11 @@ void Protocol::process_body() {
 
 void Protocol::transmit() {
     if (_rx_body->aim_request.command_id != IDLE_MSG) {
-        _ser->write_bytes(_txbuf, sizeof(header_t) + _tx_header->data_length);
+        uint16_t data_length = sizeof(header_t) + _tx_header->data_length + LEN_CRC16 + LEN_CMD;
+        _ser->write_bytes(_txbuf, data_length);
 #ifdef DEBUG
         cout << "data transmitted:" << endl;
-        for (size_t i = 0; i < sizeof(header_t) + _tx_header->data_length; i++)
+        for (size_t i = 0; i < data_length; i++)
             printf("%hhu ", _txbuf[i]);
         printf("\n");
 #endif
