@@ -3,8 +3,8 @@
 
 #include <opencv2/opencv.hpp>
 
-#define NET_FILE      "model/resnet18_fast.prototxt"
-#define PARAM_FILE    "model/resnet18_fast.caffemodel"
+#define NET_FILE      "model/resnet18.prototxt"
+#define PARAM_FILE    "model/armor_filter.caffemodel"
 
 /* Constants */
 #define rad_2_deg 57.2957795

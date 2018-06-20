@@ -1,5 +1,7 @@
 #include "aimbot.h"
 
+static bool long_shoot = false;
+
 void distill_color(const Mat & src_img, Mat & dst_img, string color_type) {
     std::vector<cv::Mat> bgr;
     cv::split(src_img, bgr);
@@ -83,9 +85,9 @@ Point2f _get_point_of_interest(const Mat & crop_distilled) {
 
 Mat _image_cropper(const Mat & frame, Point2f poi) {
     int lower_y = poi.y - IMAGE_HEIGHT / 2.0; //may be negative
-    int upper_y = lower_y + IMAGE_HEIGHT; //may be overflow
-    int left_x = poi.x - IMAGE_WIDTH / 2.0; //may be negative
-    int right_x = left_x + IMAGE_WIDTH; //may be overflow
+    int upper_y = lower_y + IMAGE_HEIGHT;     //may overflow
+    int left_x = poi.x - IMAGE_WIDTH / 2.0;   //may be negative
+    int right_x = left_x + IMAGE_WIDTH;       //may overflow
     Mat ret(IMAGE_HEIGHT, IMAGE_WIDTH, CV_8UC3);
     for(int x = left_x; x < right_x; x++) {
         int new_x = x - left_x;
@@ -143,25 +145,30 @@ void ir_aimbot::preprocess_frame(Mat & cur_frame_distilled, const Mat & cur_fram
 }
 
 vector<RotatedRect> ir_aimbot::get_hitbox(CameraBase * my_cam) {
+    Point2f poi;
     //get cur image from camera
     Mat cur_frame_distilled;
     //my_cam->get_img(cur_frame);
     cur_frame = my_cam->cam_read();
     cur_frame.copyTo(ori_cur_frame);
-    Mat crop_detect, crop_distilled;
-    resize(cur_frame, crop_detect, Size(320, 180));
-    #ifdef DEBUG
-        imshow("Go1", crop_detect);
-        waitKey(1);
-    #endif
-    preprocess_frame(crop_distilled, crop_detect, Mat::ones(10, 10, CV_8UC1), Mat::ones(12, 12, CV_8UC1));
-    #ifdef DEBUG
-        imshow("Crop_Distilled", crop_distilled);
-        waitKey(1);
-    #endif
-    Point2f poi = _get_point_of_interest(crop_distilled);
-    /* process cur_frame (cropping) */
-    cur_frame = _image_cropper(cur_frame, poi);
+    if (long_shoot) {
+        Mat crop_detect, crop_distilled;
+        resize(cur_frame, crop_detect, Size(320, 180));
+        #ifdef DEBUG
+            imshow("Go1", crop_detect);
+            waitKey(1);
+        #endif
+        preprocess_frame(crop_distilled, crop_detect, Mat::ones(10, 10, CV_8UC1), Mat::ones(12, 12, CV_8UC1));
+        #ifdef DEBUG
+            imshow("Crop_Distilled", crop_distilled);
+            waitKey(1);
+        #endif
+        poi = _get_point_of_interest(crop_distilled);
+        /* process cur_frame (cropping) */
+        cur_frame = _image_cropper(cur_frame, poi);
+    } else {
+        resize(cur_frame, cur_frame, Size(IMAGE_WIDTH, IMAGE_HEIGHT));
+    }
     /* begin color distillation; pulled from RoboRTS */
     preprocess_frame(cur_frame_distilled, cur_frame,
             Mat::ones(light_bar_kernel_height, light_bar_kernel_width, CV_8UC1),
@@ -181,10 +188,15 @@ vector<RotatedRect> ir_aimbot::get_hitbox(CameraBase * my_cam) {
     vector<RotatedRect> target_armors = detect_armor(light_bars, cur_frame);
     vector<RotatedRect> final_armor = filter_armor(target_armors);
     for(size_t i = 0; i < final_armor.size(); ++i){
-        final_armor[i].center.x -= IMAGE_WIDTH / 2;
-        final_armor[i].center.y -= IMAGE_HEIGHT / 2;
-        final_armor[i].center.x += poi.x;
-        final_armor[i].center.y += poi.y;
+        if (long_shoot) {
+            final_armor[i].center.x -= IMAGE_WIDTH / 2;
+            final_armor[i].center.y -= IMAGE_HEIGHT / 2;
+            final_armor[i].center.x += poi.x;
+            final_armor[i].center.y += poi.y;
+        } else {
+            final_armor[i].center.x *= (ORIG_IMAGE_WIDTH * 1.0 / IMAGE_WIDTH);
+            final_armor[i].center.y *= (ORIG_IMAGE_HEIGHT * 1.0 / IMAGE_HEIGHT);
+        }
     }
     return final_armor;
 }
