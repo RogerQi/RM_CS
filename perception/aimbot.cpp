@@ -185,8 +185,11 @@ vector<RotatedRect> ir_aimbot::get_hitbox(CameraBase * my_cam) {
         imshow("Light_bar", temp_img);
         waitKey(1);
     #endif
-    vector<RotatedRect> target_armors = detect_armor(light_bars, cur_frame);
-    vector<RotatedRect> final_armor = filter_armor(target_armors);
+    vector<armor_t> target_armors = detect_armor(light_bars, cur_frame);
+    vector<armor_t> final_armor_struct = filter_armor(target_armors);
+    vector<RotatedRect> final_armor;
+    for (int i = 0; i < final_armor_struct.size(); ++i)
+        final_armor.push_back(final_armor_struct[i].armor);
     for(size_t i = 0; i < final_armor.size(); ++i){
         if (long_shoot) {
             final_armor[i].center.x -= IMAGE_WIDTH / 2;
@@ -230,8 +233,8 @@ vector<RotatedRect> ir_aimbot::filter_lights(const Mat & orig_img,
     return ret;
 }
 
-vector<RotatedRect> ir_aimbot::detect_armor(vector<RotatedRect> & filtered_light_bars, const Mat & ori_img) {
-    vector<RotatedRect> ret;
+vector<armor_t> ir_aimbot::detect_armor(vector<RotatedRect> & filtered_light_bars, const Mat & ori_img) {
+    vector<armor_t> ret;
     for(size_t i = 0; i < filtered_light_bars.size(); i++) {
         RotatedRect light_1 = filtered_light_bars[i];
         for(size_t j = i + 1; j < filtered_light_bars.size(); j++) {
@@ -258,23 +261,32 @@ vector<RotatedRect> ir_aimbot::detect_armor(vector<RotatedRect> & filtered_light
                bbox_w * bbox_h > 40 &&
                bbox_w / bbox_h < 6) {
                 RotatedRect this_armor;
+                armor_t this_armor_with_light_bars;
                 this_armor.center = Point2f(bbox_x, bbox_y);
                 this_armor.size = Size2f(bbox_w, bbox_h);
                 this_armor.angle = bbox_angle;
-                ret.push_back(this_armor);
+                this_armor_with_light_bars.armor = this_armor;
+                if (light_1.center.x > light_2.center.x) {
+                    this_armor_with_light_bars.right_light_bar = light_1;
+                    this_armor_with_light_bars.left_light_bar = light_2;
+                } else {
+                    this_armor_with_light_bars.right_light_bar = light_2;
+                    this_armor_with_light_bars.left_light_bar = light_1;
+                }
+                ret.push_back(this_armor_with_light_bars);
             }
         }
     }
     return ret;
 }
 
-vector<RotatedRect> ir_aimbot::filter_armor(const vector<RotatedRect> & armor_obtained){
-    vector<RotatedRect> filtered;
+vector<armor_t> ir_aimbot::filter_armor(const vector<armor_t> & armor_obtained){
+    vector<armor_t> filtered;
     float *input_data = input_layer->mutable_cpu_data();
     float *output_data = output_layer->mutable_cpu_data();
-    for (const RotatedRect & armor_bd: armor_obtained) {
+    for (const armor_t & armor_bd: armor_obtained) {
         Mat channel(FEEDING_IMG_HEIGHT, FEEDING_IMG_WIDTH, CV_32FC1, input_data);
-        Mat normalized_armor = armor_perspective_transform(cur_frame, armor_bd);
+        Mat normalized_armor = armor_perspective_transform(cur_frame, armor_bd.armor);
         normalized_armor.convertTo(channel, CV_32FC1);
         //channel /= 255;
         input_data += FEEDING_IMG_HEIGHT * FEEDING_IMG_WIDTH;

@@ -22,7 +22,16 @@ using namespace caffe;
 #define CLASSIFIER_THRESHOLD 0.41
 #define FEEDING_IMG_HEIGHT   100
 
-    /* Common Functions */
+    /* Begin Common Functions */
+
+
+    /* End Common Functions */
+
+typedef struct {
+    cv::RotatedRect armor;
+    cv::RotatedRect left_light_bar;
+    cv::RotatedRect right_light_bar;
+} armor_t;
 
 /*
  * @brief Simple template function that return the largest variable of two variables of same type
@@ -170,14 +179,14 @@ private:
      * @param ori_img ref to original image captured by camera
      * @return vector of armor_loc objects
      */
-    vector<RotatedRect> detect_armor(vector<RotatedRect> & filtered_light_bars, const Mat & ori_img);
+    vector<armor_t> detect_armor(vector<RotatedRect> & filtered_light_bars, const Mat & ori_img);
 
     /*
      * @brief armor filtering model. Not implemented for now
      * @param armor_obtained armor_loc objects from last step
      * @return filtered armor_loc objects
      */
-    vector<RotatedRect> filter_armor(const vector<RotatedRect> & armor_obtained);
+    vector<armor_t> filter_armor(const vector<armor_t> & armor_obtained);
 };
 
 #endif
