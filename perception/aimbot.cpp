@@ -106,8 +106,6 @@ Mat _image_cropper(const Mat & frame, Point2f poi) {
 }
 
 ir_aimbot::ir_aimbot(string color_type_str){
-    string net_file = "model/resnet18.prototxt";
-    string param_file = "model/armor_filter.caffemodel";
     #ifdef CPU_ONLY
         Caffe::set_mode(Caffe::CPU);
     #else
@@ -115,8 +113,8 @@ ir_aimbot::ir_aimbot(string color_type_str){
         Caffe::set_mode(Caffe::GPU);
         Caffe::SetDevice(0);
     #endif
-    net = new Net<float>(net_file.c_str(), caffe::TEST);
-    net->CopyTrainedLayersFrom(param_file.c_str());
+    net = new Net<float>(NET_FILE, caffe::TEST);
+    net->CopyTrainedLayersFrom(PARAM_FILE);
     input_layer = net->input_blobs()[0];
     input_layer->Reshape(MODEL_BATCH_SIZE, 1, 100, 100);
     net->Reshape();

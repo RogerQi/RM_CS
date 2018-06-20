@@ -3,6 +3,9 @@
 
 #include <opencv2/opencv.hpp>
 
+#define NET_FILE      "model/resnet18_fast.prototxt"
+#define PARAM_FILE    "model/resnet18_fast.caffemodel"
+
 /* Constants */
 #define rad_2_deg 57.2957795
 
