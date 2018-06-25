@@ -2,13 +2,38 @@
 
 static bool long_shoot = false;
 
+template<class T> size_t get_target(const vector<T> & tar) {
+    size_t desired_tar = 0;
+    float nearest_distance = sqrt(pow(tar[desired_tar].x - ORIG_IMAGE_WIDTH / 2, 2) + pow(tar[desired_tar].y - ORIG_IMAGE_HEIGHT / 2, 2));
+    for(size_t i = 0; i < tar.size(); ++i) {
+        float cur_distance = sqrt(pow(tar[i].x - ORIG_IMAGE_WIDTH / 2, 2) + pow(tar[i].y - ORIG_IMAGE_HEIGHT / 2, 2));
+        if(cur_distance < nearest_distance) {
+            desired_tar = i;
+            nearest_distance = cur_distance;
+        }
+    }
+    return desired_tar;
+}
+
+template<> size_t get_target<RotatedRect>(const vector<RotatedRect> & tar) {
+    //@TODO: use a weighted algorithm
+    vector<Point2f> rect_pt (tar.size());
+    for (size_t i = 0; i < tar.size(); ++i) rect_pt[i] = tar[i].center;
+    return get_target(rect_pt);
+}
+
+template<> size_t get_target<armor_t>(const vector<armor_t> & tar) {
+    vector<RotatedRect> true_rect (tar.size());
+    for (size_t i = 0; i < tar.size(); ++i) true_rect[i] = tar[i].armor;
+    return get_target(true_rect);
+}
+
 void distill_color(const Mat & src_img, Mat & dst_img, string color_type) {
     std::vector<cv::Mat> bgr;
     cv::split(src_img, bgr);
     if (color_type == "red") {
         cv::subtract(bgr[2], bgr[1], dst_img);
     } else {
-        //assume it's blue
         cv::subtract(bgr[0], bgr[2], dst_img);
     }
 }
@@ -51,11 +76,10 @@ float _cal_aspect_ratio(RotatedRect light) {
 Point2f _get_point_of_interest(const Mat & crop_distilled) {
     vector<vector<Point> > contours;
     vector<Vec4i> hierarchy;
-    Point2f middle_pt(ORIG_IMAGE_WIDTH * 1.0 / 2, ORIG_IMAGE_HEIGHT * 1.0 / 2);
     findContours(crop_distilled, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
     if(contours.size() == 0)
         //no contours are found
-        return middle_pt;
+        return Point2f(ORIG_IMAGE_WIDTH / 2, ORIG_IMAGE_HEIGHT / 2);
 
     vector<Moments> mu(contours.size());
     for(int i = 0; i < contours.size(); i++)
@@ -69,15 +93,7 @@ Point2f _get_point_of_interest(const Mat & crop_distilled) {
 
     float dw = ORIG_IMAGE_WIDTH * 1.0 / crop_distilled.cols;
     float dh = ORIG_IMAGE_HEIGHT * 1.0 / crop_distilled.rows;
-    Point2f nearest_pt = mc[0];
-    float nearest_distance = sqrt(pow(nearest_pt.x - middle_pt.x, 2) + pow(nearest_pt.y - middle_pt.y, 2));
-    for(const Point2f pt : mc) {
-        float cur_distance = sqrt(pow(pt.x - middle_pt.x, 2) + pow(pt.y - middle_pt.y, 2));
-        if(cur_distance < nearest_distance) {
-            nearest_pt = pt;
-            nearest_distance = cur_distance;
-        }
-    }
+    Point2f nearest_pt = mc[get_target(mc)];
     nearest_pt.x *= dw;
     nearest_pt.y *= dh;
     return nearest_pt;
@@ -144,7 +160,7 @@ void ir_aimbot::preprocess_frame(Mat & cur_frame_distilled, const Mat & cur_fram
     cur_frame_distilled = cur_frame_distilled & cur_frame_gray_binarized;
 }
 
-vector<RotatedRect> ir_aimbot::get_hitbox(CameraBase * my_cam) {
+vector<RotatedRect> ir_aimbot::get_hitboxes(CameraBase * my_cam) {
     Point2f poi;
     //get cur image from camera
     Mat cur_frame_distilled;
@@ -190,6 +206,7 @@ vector<RotatedRect> ir_aimbot::get_hitbox(CameraBase * my_cam) {
     vector<RotatedRect> final_armor;
     for (int i = 0; i < final_armor_struct.size(); ++i)
         final_armor.push_back(final_armor_struct[i].armor);
+    // correspond to original images size from camera
     for(size_t i = 0; i < final_armor.size(); ++i){
         if (long_shoot) {
             final_armor[i].center.x -= IMAGE_WIDTH / 2;

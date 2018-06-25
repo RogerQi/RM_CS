@@ -49,8 +49,8 @@ void make_data(string file_path){
     ir_aimbot detector("red");
     int iter = -1;
     while(cam->is_alive()){
-        iter++;
-        std::vector<RotatedRect> ret = detector.get_hitbox(cam);
+        ++iter;
+        std::vector<RotatedRect> ret = detector.get_hitboxes(cam);
         Mat frame_shower = detector.get_cur_frame();
         if(iter % 16 != 0){
             continue;

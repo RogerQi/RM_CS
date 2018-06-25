@@ -59,8 +59,8 @@ Rune::Rune(string net_file, string param_file) {
     net->Reshape();
     input_layer = net->input_blobs()[0];
     output_layer = net->output_blobs()[0];
-    angle_d_pitch = (RUNE_CAMERA_FOV_Y) / (IMAGE_HEIGHT * 1.0);
-    angle_d_yaw = (RUNE_CAMERA_FOV_X) / (IMAGE_WIDTH * 1.0);
+    angle_d_pitch = (CV_CAMERA_FOV_Y) / (IMAGE_HEIGHT * 1.0);
+    angle_d_yaw = (CV_CAMERA_FOV_X) / (IMAGE_WIDTH * 1.0);
 }
 
 Rune::~Rune() {}
@@ -108,10 +108,10 @@ pair<float, float> Rune::get_hit_angle(CameraBase * cam){
 int Rune::calc_position_to_hit(void){
     if(array_array_equal(new_red_seq, cur_red_digits, 5))
         cur_round_counter += 1;
-    else 
+    else
         //new round; recognition error
         cur_round_counter = 0;
-    
+
     if(cur_round_counter >= 5)
         //guess you are debugging; set it to new round
         cur_round_counter = 0;
@@ -126,7 +126,7 @@ int Rune::calc_position_to_hit(void){
     for(int i = 0; i < 9; i++)
         if(cur_white_digits[i] == desired_number)
             return i + 1;
-   
+
     std::cerr << "You should never get here!!!!!! 1-9 are not in white digits" << std::endl;
     return 1;
 }
@@ -142,7 +142,7 @@ void Rune::get_current_rune(CameraBase * cam) {
         fill_n(red_matrix[i], 9, 0);
     for(int i = 0; i < 9; i++)
         fill_n(white_matrix[i], 9, 0);
-    
+
     while(time_elapsed < duration<double>(RUNE_DETECT_TIME_SPAN)) {
         cur_time = high_resolution_clock::now();
         time_elapsed = duration_cast<duration<double> >(cur_time - start_time);
@@ -328,7 +328,7 @@ bool Rune::red_contour_detect(void){
     findContours(distilled_img, temp_contour, hierarchy, cv::RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
     if(temp_contour.size() < 5)
         return false;
-    
+
     for(auto it = temp_contour.begin(); it != temp_contour.end(); ++it) {
         vector<Point> cnt = *(it);
         RotatedRect rect = minAreaRect(cnt);

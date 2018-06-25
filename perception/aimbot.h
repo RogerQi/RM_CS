@@ -24,6 +24,13 @@ using namespace caffe;
 
     /* Begin Common Functions */
 
+/*
+ * @brief Simple template function that return the largest variable of two variables of same type
+ * @param a variable of type T
+ * @param b another variable of type T
+ * @return largest of the two
+ */
+template<class T> const T& max_of_two(const T& a, const T&b) {return (a>b)? a:b;}
 
     /* End Common Functions */
 
@@ -33,13 +40,13 @@ typedef struct {
     cv::RotatedRect right_light_bar;
 } armor_t;
 
-/*
- * @brief Simple template function that return the largest variable of two variables of same type
- * @param a variable of type T
- * @param b another variable of type T
- * @return largest of the two
- */
-template<class T> const T& max_of_two(const T& a, const T&b) {return (a>b)? a:b;}
+typedef struct {
+    float target_distance;
+    float delta_pitch;
+    float delta_yaw;
+} aimbot_command_t;
+
+template<class T> T get_target(const vector<T> & tar, const T & ref);
 
 /**
  * Magic function that highlights red or blue area
@@ -105,7 +112,7 @@ public:
      * Process image (frame) in current video buffer; pure virtual function to be implemented
      * @return vector of cv::Rect object(s)
      */
-    virtual std::vector<RotatedRect> get_hitbox(CameraBase * my_cam) = 0;
+    virtual std::vector<RotatedRect> get_hitboxes(CameraBase * my_cam) = 0;
 
 private:
     /* to be added */
@@ -130,7 +137,7 @@ public:
      * Process image (frame) in current video buffer; pure virtual function to be implemented
      * @return vector of cv::Rect object(s)
      */
-    vector<RotatedRect> get_hitbox(CameraBase * my_cam);
+    vector<RotatedRect> get_hitboxes(CameraBase * my_cam);
 
     /**
      * @brief
