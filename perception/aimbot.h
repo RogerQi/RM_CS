@@ -40,13 +40,20 @@ typedef struct {
     cv::RotatedRect right_light_bar;
 } armor_t;
 
+//@TODO: return calculated abs pitch and abs yaw (with res to calced trejectory)
 typedef struct {
     float target_distance;
-    float delta_pitch;
-    float delta_yaw;
+    float abs_pitch;
+    float abs_yaw;
 } aimbot_command_t;
 
-template<class T> T get_target(const vector<T> & tar, const T & ref);
+/**
+ * target of interest algorithm.
+ * @brief
+ * @param  tar vector of possible targets (RotatedRect, armor_t, Point2f)
+ * @return Index of POI
+ */
+template<class T> size_t get_target(const vector<T> & ta);
 
 /**
  * Magic function that highlights red or blue area
