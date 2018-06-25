@@ -3,6 +3,7 @@
 static bool long_shoot = false;
 
 template<class T> size_t get_target(const vector<T> & tar) {
+    if(tar.size() == 0) return 0;
     size_t desired_tar = 0;
     float nearest_distance = sqrt(pow(tar[desired_tar].x - ORIG_IMAGE_WIDTH / 2, 2) + pow(tar[desired_tar].y - ORIG_IMAGE_HEIGHT / 2, 2));
     for(size_t i = 0; i < tar.size(); ++i) {
@@ -17,12 +18,14 @@ template<class T> size_t get_target(const vector<T> & tar) {
 
 template<> size_t get_target<RotatedRect>(const vector<RotatedRect> & tar) {
     //@TODO: use a weighted algorithm
+    if(tar.size() == 0) return 0;
     vector<Point2f> rect_pt (tar.size());
     for (size_t i = 0; i < tar.size(); ++i) rect_pt[i] = tar[i].center;
     return get_target(rect_pt);
 }
 
 template<> size_t get_target<armor_t>(const vector<armor_t> & tar) {
+    if(tar.size() == 0) return 0;
     vector<RotatedRect> true_rect (tar.size());
     for (size_t i = 0; i < tar.size(); ++i) true_rect[i] = tar[i].armor;
     return get_target(true_rect);
@@ -160,7 +163,7 @@ void ir_aimbot::preprocess_frame(Mat & cur_frame_distilled, const Mat & cur_fram
     cur_frame_distilled = cur_frame_distilled & cur_frame_gray_binarized;
 }
 
-vector<RotatedRect> ir_aimbot::get_hitboxes(CameraBase * my_cam) {
+vector<armor_t> ir_aimbot::get_hitboxes(CameraBase * my_cam) {
     Point2f poi;
     //get cur image from camera
     Mat cur_frame_distilled;
@@ -202,23 +205,56 @@ vector<RotatedRect> ir_aimbot::get_hitboxes(CameraBase * my_cam) {
         waitKey(1);
     #endif
     vector<armor_t> target_armors = detect_armor(light_bars, cur_frame);
-    vector<armor_t> final_armor_struct = filter_armor(target_armors);
-    vector<RotatedRect> final_armor;
-    for (int i = 0; i < final_armor_struct.size(); ++i)
-        final_armor.push_back(final_armor_struct[i].armor);
+    vector<armor_t> final_armor = filter_armor(target_armors);
     // correspond to original images size from camera
     for(size_t i = 0; i < final_armor.size(); ++i){
         if (long_shoot) {
-            final_armor[i].center.x -= IMAGE_WIDTH / 2;
-            final_armor[i].center.y -= IMAGE_HEIGHT / 2;
-            final_armor[i].center.x += poi.x;
-            final_armor[i].center.y += poi.y;
+            final_armor[i].armor.center.x -= IMAGE_WIDTH / 2;
+            final_armor[i].armor.center.y -= IMAGE_HEIGHT / 2;
+            final_armor[i].armor.center.x += poi.x;
+            final_armor[i].armor.center.y += poi.y;
         } else {
-            final_armor[i].center.x *= (ORIG_IMAGE_WIDTH * 1.0 / IMAGE_WIDTH);
-            final_armor[i].center.y *= (ORIG_IMAGE_HEIGHT * 1.0 / IMAGE_HEIGHT);
+            float width_scale_factor = ORIG_IMAGE_WIDTH * 1.0 / IMAGE_WIDTH;
+            float height_scale_factor = ORIG_IMAGE_HEIGHT * 1.0 / IMAGE_HEIGHT;
+            final_armor[i].armor.size.width *= width_scale_factor;
+            final_armor[i].armor.size.height *= height_scale_factor;
+            final_armor[i].armor.center.x *= width_scale_factor;
+            final_armor[i].armor.center.y *= height_scale_factor;
+            final_armor[i].left_light_bar.size.width *= width_scale_factor;
+            final_armor[i].left_light_bar.size.height *= height_scale_factor;
+            final_armor[i].left_light_bar.center.x *= width_scale_factor;
+            final_armor[i].left_light_bar.center.y *= height_scale_factor;
+            final_armor[i].right_light_bar.size.width *= width_scale_factor;
+            final_armor[i].right_light_bar.size.height *= height_scale_factor;
+            final_armor[i].right_light_bar.center.x *= width_scale_factor;
+            final_armor[i].right_light_bar.center.y *= height_scale_factor;
         }
     }
+    cur_visible_armors = final_armor;
     return final_armor;
+}
+
+aimbot_command_t ir_aimbot::get_desired_command(CameraBase *my_cam) {
+    aimbot_command_t ret;
+    vector<armor_t> visible_enemy_armors = get_hitboxes(my_cam);
+    if (visible_enemy_armors.size() == 0) {
+        ret.target_distance = 0;
+    } else {
+        size_t focus_armor_ind = get_target(visible_enemy_armors);
+        ret.target_distance = get_armor_distance(visible_enemy_armors[focus_armor_ind]);
+    }
+    ret.abs_yaw = 0;
+    ret.abs_pitch = 0;
+    return ret;
+}
+
+float ir_aimbot::get_armor_distance(armor_t single_armor) {
+    // based on navie camera optics model and measurement.
+    float left_bar_height = max_of_two(single_armor.left_light_bar.size.height, single_armor.left_light_bar.size.width);
+    float right_bar_height = max_of_two(single_armor.right_light_bar.size.height, single_armor.right_light_bar.size.width);
+    float left_est = LIGHT_BAR_HEIGHT_ONE_METER / left_bar_height;
+    float right_est = LIGHT_BAR_HEIGHT_ONE_METER / right_bar_height;
+    return (left_est + right_est) / 2;
 }
 
 vector<RotatedRect> ir_aimbot::detect_lights(Mat & distilled_color){
@@ -313,9 +349,11 @@ vector<armor_t> ir_aimbot::filter_armor(const vector<armor_t> & armor_obtained){
 
     for (size_t i = 0; i < armor_obtained.size(); i++) {
         vector<float> prob;
-        //std::cout << "Output layer's channel num: " << output_layer->channels() << std::endl;
-        //std::cout << "Prob 0: " << output_data[0] << std::endl;
-        //std::cout << "Prob 1: " << output_data[1] << std::endl;
+#ifdef DEBUG
+        std::cout << "[Armor Detection] Output layer's channel num: " << output_layer->channels() << std::endl;
+        std::cout << "[Armor Detection]Prob 0: " << output_data[0] << std::endl;
+        std::cout << "[Armor Detection]Prob 1: " << output_data[1] << std::endl;
+#endif
         for(int j = 0; j < output_layer->channels(); j++){
             prob.push_back(output_data[j]);
         }

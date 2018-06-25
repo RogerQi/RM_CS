@@ -17,22 +17,24 @@ public:
     VideoFeed(string video_file_name) : CameraBase() {
         alive = true;
         cap = VideoCapture(video_file_name);
+        cap >> next_frame; // read first frame for init.
         //start();
     }
 
     Mat cam_read() {
-        Mat frame;
-        cap >> frame;
-        if(frame.empty()){
+        Mat cur_frame = next_frame;
+        cap >> next_frame;
+        if(next_frame.empty()){
             //std::cout << "this is the end of the video!!!" << std::endl;
             alive = false;
         }
         //resize(frame, frame, Size(640, 360));
-        return frame;
+        return cur_frame;
     }
 
     bool is_alive(void) { return alive; }
 private:
+    Mat next_frame;
     bool alive;
     VideoCapture cap;
 };

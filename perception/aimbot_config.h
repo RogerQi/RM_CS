@@ -10,7 +10,7 @@
 #define rad_2_deg 57.2957795
 
 /* Constants based on measurement and devices */
-#define light_bar_height_one_meter_far 40 // measured in 1080p
+#define LIGHT_BAR_HEIGHT_ONE_METER 40 // measured in 1080p
 
 /* threshold of avg value of blue channel of a specific ROI area. ROIs that hold a lower value will be ignored */
 #define blue_armor_avgcolor_threshold 220

@@ -50,13 +50,13 @@ void make_data(string file_path){
     int iter = -1;
     while(cam->is_alive()){
         ++iter;
-        std::vector<RotatedRect> ret = detector.get_hitboxes(cam);
+        std::vector<armor_t> ret = detector.get_hitboxes(cam);
         Mat frame_shower = detector.get_cur_frame();
         if(iter % 16 != 0){
             continue;
         }
-        for(const RotatedRect & rr: ret){
-            save_rotated_rect(frame_shower, rr);
+        for(const armor_t & rr: ret){
+            save_rotated_rect(frame_shower, rr.armor);
         }
     }
     return;

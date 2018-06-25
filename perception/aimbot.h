@@ -119,7 +119,7 @@ public:
      * Process image (frame) in current video buffer; pure virtual function to be implemented
      * @return vector of cv::Rect object(s)
      */
-    virtual std::vector<RotatedRect> get_hitboxes(CameraBase * my_cam) = 0;
+    virtual std::vector<armor_t> get_hitboxes(CameraBase * my_cam) = 0;
 
 private:
     /* to be added */
@@ -144,13 +144,23 @@ public:
      * Process image (frame) in current video buffer; pure virtual function to be implemented
      * @return vector of cv::Rect object(s)
      */
-    vector<RotatedRect> get_hitboxes(CameraBase * my_cam);
+    vector<armor_t> get_hitboxes(CameraBase *my_cam);
 
     /**
      * @brief
      * @return get current frame updated by hit box (for debugging purpose only)
      */
     inline Mat & get_cur_frame(void) { return ori_cur_frame; }
+
+    /**
+     * get desired gimbal command (when attacking an enemy). Should be good enough to pour directly to COMM
+     * @brief
+     * @param  my_cam An abstract camera Base object. Can be a video feed or a real camera.
+     * @return        gimbal command as per defined by struct.
+     */
+    aimbot_command_t get_desired_command(CameraBase *my_cam);
+
+    inline vector<armor_t> get_latest_visible_armors(void) { return cur_visible_armors; }
 
 private:
     /* Caffe NN utilities */
@@ -160,9 +170,19 @@ private:
 
     Mat cur_frame, ori_cur_frame;
 
+    vector<armor_t> cur_visible_armors;
+
     string my_color;
 
     int my_distillation_threshold;
+
+    /**
+     * helper function for estimating armor distance to camera. Uses LIGHT_BAR_HEIGHT_ONE_METER in aimbot_config.h
+     * @brief
+     * @param  single_armor a struct that represents a single piece of armor. Assumes the armor is good.
+     * @return              estimated distance
+     */
+    float get_armor_distance(armor_t single_armor);
 
     /**
      * @brief preprocess frame with magical methods
