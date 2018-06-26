@@ -3,6 +3,8 @@
 #include <chrono>
 #include <iostream>
 
+/* ---------------------------- CameraBase ---------------------------*/
+
 CameraBase::CameraBase() {
     _buffer.resize(2);
     _write_index = 0;
@@ -31,6 +33,71 @@ void CameraBase::get_img(Mat &dst) {
 
 void CameraBase::start() {
     _buffer[_read_index] = cam_read();
-    std::thread t(&CameraBase::set_img, this, 150);
+    std::thread t(&CameraBase::set_img, this, 0);
     t.detach();
+}
+
+/* ---------------------------- SimpleCVCam ---------------------------*/
+
+SimpleCVCam::SimpleCVCam(unsigned short device_id) : CameraBase() {
+    cap = VideoCapture(device_id);
+    start();
+}
+
+Mat SimpleCVCam::cam_read() {
+    Mat frame;
+    cap >> frame;
+    return frame;
+}
+
+/* ---------------------------- CSICam ---------------------------*/
+
+CSICam::CSICam(char *pipeline) {
+    cap = VideoCapture(pipeline);
+    start();
+}
+
+/* -------------------------- OV5693Cam ----------------------- */
+
+
+OV5693Cam::OV5693Cam(char *pipeline, char *i2c_file) : CSICam(pipeline) {
+    i2c_init(i2c_file);
+}
+
+bool OV5693Cam::i2c_init(char *i2c_file) {
+    int file;
+
+    if ((file = open(i2c_file, O_RDWR)) < 0) {
+        std::cerr << "cannot open i2c file " << i2c_file << std::endl;
+        return false;
+    }
+
+#ifdef TX2
+    if (ioctl(file, I2C_SLAVE, ad5823_addr) < 0) {
+        std::cerr << "cannot set i2c slave " << ad5823_addr << std::endl;
+        return false;
+    }
+#endif
+
+    i2c_fd = file;
+
+    i2c_write(VCM_MOVE_TIME, 0x43);
+    i2c_write(VCM_MODE, 0x00);
+    set_focus(default_focus);
+
+    return true;
+}
+
+bool OV5693Cam::i2c_write(uint8_t cmd, uint8_t val) {
+    uint8_t data[2];
+
+    data[0] = cmd;
+    data[1] = val;
+
+    return write(i2c_fd, data, 2) == 2;
+}
+
+bool OV5693Cam::set_focus(uint16_t focus) {
+    i2c_write(VCM_CODE_MSB, 0x04 | (focus >> 8));
+    i2c_write(VCM_CODE_LSB, focus & 0xff);
 }

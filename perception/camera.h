@@ -4,7 +4,19 @@
 #include <mutex>
 #include <vector>
 #include <thread>
+#include <iostream>
+#include <cstdlib>
+#include <cstring>
+#include <unistd.h>
 #include <opencv2/opencv.hpp>
+#include <sys/ioctl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#ifdef TX2
+    #include <linux/i2c-dev.h>
+#endif
 
 using namespace cv;
 using namespace std;
@@ -39,6 +51,7 @@ public:
      * @return none
      */
     void start();
+
     /**
      * @brief to be implemented according to the specs of a specific camera
      * @return Mat object read directly from the camera
@@ -57,20 +70,70 @@ protected:
     mutex _lock;
 };
 
+/**
+ * @brief a generalized opencv camera class
+ */
 class SimpleCVCam: public CameraBase {
 public:
-    SimpleCVCam() : CameraBase() {
-        cap = VideoCapture(0);
-        start();
-    }
+    /**
+     * @brief constructor for SimpleCVCam
+     * @param device_id device id as in camera index [default to 0]
+     */
+    SimpleCVCam(unsigned short device_id = 0);
 
-    Mat cam_read() {
-        Mat frame;
-        cap >> frame;
-        return frame;
-    }
-private:
+    /**
+     * @brief   virtual implementation of how to read images
+     * @return  Mat object read directly from the camera 
+     */
+    Mat cam_read();
+protected:
     VideoCapture cap;
 };
+
+/**
+ * @brief a generalized CSI camera class
+ */
+class CSICam: public SimpleCVCam {
+public:
+    /**
+     * @brief constructor for CSICam
+     * @param pipeline Gstreamer pipeline
+     */
+    CSICam(char *pipeline);
+};
+
+
+/**
+ * @brief a specialized camera class for variable focal length OV5693
+ */
+class OV5693Cam: public CSICam {
+public:
+    /**
+     * @brief constructor for OV5693Cam
+     * @param pipeline Gstreamer pipeline
+     * @param i2c_file
+     */
+    OV5693Cam(char *pipeline, char *i2c_file);
+
+    /**
+     * @brief change camera focal length
+     * @param focus 10 bit focal length value within [0 1023] (0 being the longest focal length)
+     * @return 
+     */
+    bool set_focus(uint16_t focus);
+    
+private:
+    bool    i2c_init(char *i2c_file);
+    bool    i2c_write(uint8_t cmd, uint8_t val);
+
+    int i2c_fd = -1;
+    static const uint16_t   default_focus   = 500;
+    static const uint16_t   ad5823_addr     = 0x0c;
+    static const uint8_t    VCM_MOVE_TIME   = 0x03;
+    static const uint8_t    VCM_MODE        = 0x02;
+    static const uint8_t    VCM_CODE_MSB    = 0x04;
+    static const uint8_t    VCM_CODE_LSB    = 0x05;
+};
+
 
 #endif
