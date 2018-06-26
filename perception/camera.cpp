@@ -72,7 +72,7 @@ bool OV5693Cam::i2c_init(char *i2c_file) {
         return false;
     }
 
-#ifdef TX2
+#ifdef USE_GPU
     if (ioctl(file, I2C_SLAVE, ad5823_addr) < 0) {
         std::cerr << "cannot set i2c slave " << ad5823_addr << std::endl;
         return false;
