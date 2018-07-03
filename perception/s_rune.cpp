@@ -5,6 +5,7 @@
 #include <vector>
 #include <cstring>
 #include <algorithm>
+#include <iostream>
 #include "cv_config.h"
 #include "camera.h"
 #include "s_rune.h"
@@ -13,6 +14,15 @@ using namespace caffe;
 using namespace std;
 using namespace cv;
 using namespace std::chrono;
+
+template<class T>
+bool naive_thres_test(const vector<T> & query, const vector<T> & baseline, float thresh) {
+    assert(query.size() == baseline.size());
+    for (size_t i = 0; i < query.size(); ++i) {
+        if (fabs(query[i] - baseline[i]) > thresh) return false;
+    }
+    return true;
+}
 
 bool cmp_x(Point &i, Point &j) { return i.x < j.x; }
 
@@ -68,9 +78,10 @@ s_rune::~s_rune() {
 }
 
 void s_rune::update(CameraBase *cam) {
-    cam->get_img(raw_img);
+    //cam->get_img(raw_img);
+    raw_img = cam->cam_read();
     if (raw_img.size() != Size(IMAGE_WIDTH, IMAGE_HEIGHT))
-        cv::resize(raw_img, raw_img, Size(IMAGE_WIDTH, IMAGE_HEIGHT));
+        cv::resize(raw_img, raw_img, Size(IMAGE_WIDTH, IMAGE_HEIGHT), 0, 0, cv::INTER_LINEAR);
 #ifdef DEBUG
     raw_img.copyTo(debug_img);
     imshow("raw image", raw_img);
@@ -212,6 +223,54 @@ void s_rune::contour_detect() {
     imshow("contour detection", debug_img);
     waitKey(1);
 #endif
+}
+
+Mat s_rune::fire_get_res(CameraBase *cam) {
+    Mat my_gray_img;
+    vector<Vec4i> hierarchy;
+    vector<vector<Point> > pre_contours, contours, post_contours;
+    this->update(cam);
+    cv::cvtColor(raw_img, my_gray_img, cv::COLOR_BGR2GRAY);
+    cv::threshold(my_gray_img, my_gray_img, 0, 255, cv::THRESH_BINARY+cv::THRESH_OTSU);
+    cv::findContours(my_gray_img, pre_contours, hierarchy, cv::RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
+    for (const vector<Point> & ctr : pre_contours) {
+        double area_size = cv::contourArea(ctr);
+        if (area_size > 400 && area_size < 4000)
+            contours.push_back(ctr);
+    }
+    Mat dmask = cv::Mat::zeros(raw_img.rows, raw_img.cols, CV_8UC1);
+    for (const vector<Point> & ctr : contours) {
+        vector<vector<Point> > contour_wrap = {ctr};
+        cv::drawContours(dmask, contour_wrap, -1, 255, -1);
+    }
+    cv::imshow("debug", dmask);
+    cv::waitKey(1);
+    for (const vector<Point> & ctr : contours) {
+        if (fire_filter_contour(ctr))
+            post_contours.push_back(ctr);
+    }
+    cv::drawContours(raw_img, post_contours, -1, cv::Scalar(255, 0, 0), 3);
+    return raw_img;
+}
+
+bool s_rune::fire_filter_contour(const vector<Point> & single_contour) {
+    vector<float> mean_thresh = {150, 210, 230};
+    vector<float> std_thresh = {50, 40, 25};
+    vector<vector<Point> > contour_wrap = {single_contour};
+    std::vector<Mat> bgr;
+    cv::split(raw_img, bgr);
+    Mat mask = cv::Mat::zeros(bgr[0].rows, bgr[0].cols, CV_8UC1);
+    cv::drawContours(mask, contour_wrap, -1, 255, -1);
+    vector<float> my_mean, my_std;
+    for (const Mat & my_mat : bgr) {
+        cv::Scalar temp_mean, temp_std;
+        cv::meanStdDev(my_mat, temp_mean, temp_std, mask);
+        my_mean.push_back(temp_mean.val[0]);
+        my_std.push_back(temp_std.val[0]);
+    }
+    if(naive_thres_test(my_mean, mean_thresh, 55) && naive_thres_test(my_std, std_thresh, 20))
+        return true;
+    return false;
 }
 
 void s_rune::batch_generate() {
@@ -405,20 +464,20 @@ void s_rune::red_batch_generate(){
 
 bool s_rune::distill_red_dig(void){
     std::vector<Mat> bgr;
-    split(raw_img, bgr);
-    subtract(bgr[2], bgr[1], distilled_img);
+    cv::split(raw_img, bgr);
+    cv::subtract(bgr[2], bgr[1], distilled_img);
     distilled_img = distilled_img(cv::Rect(x_min, 0,
                 min(distilled_img.cols, x_max)-x_min, y_min));
     if (!distilled_img.cols || !distilled_img.rows)
         return false;
-    threshold(distilled_img, distilled_img, DISTILL_RED_TH, 255, THRESH_BINARY);
-    dilate(distilled_img, distilled_img, Mat::ones(5, 3, CV_8UC1));
+    cv::threshold(distilled_img, distilled_img, DISTILL_RED_TH, 255, THRESH_BINARY);
+    cv::dilate(distilled_img, distilled_img, Mat::ones(5, 3, CV_8UC1));
 #ifdef DEBUG
     raw_img(cv::Rect(x_min, 0,
                 min(raw_img.cols, x_max)-x_min, y_min)).copyTo(debug_img);
-    imshow("distilled image", distilled_img);
-    imshow("cropped red digit", debug_img);
-    waitKey(1);
+    cv::imshow("distilled image", distilled_img);
+    cv::imshow("cropped red digit", debug_img);
+    cv::waitKey(1);
 #endif
     return true;
 }
