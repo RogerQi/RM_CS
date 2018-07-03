@@ -100,4 +100,5 @@ bool OV5693Cam::i2c_write(uint8_t cmd, uint8_t val) {
 bool OV5693Cam::set_focus(uint16_t focus) {
     i2c_write(VCM_CODE_MSB, 0x04 | (focus >> 8));
     i2c_write(VCM_CODE_LSB, focus & 0xff);
+    return true;
 }

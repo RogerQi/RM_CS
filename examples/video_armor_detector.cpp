@@ -30,6 +30,7 @@ int main(void){
         putText(frame_shower, std::to_string(cur_command.target_distance), cvPoint(500, 500),
                         FONT_HERSHEY_SIMPLEX, 0.9, Scalar(0, 150, 100), 2, LINE_AA);
         save_stream << frame_shower;
+        resize(frame_shower, frame_shower, Size(640, 360));
         imshow("Go", frame_shower);
         waitKey(1);
     }

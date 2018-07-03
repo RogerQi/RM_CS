@@ -7,7 +7,7 @@
 #include <algorithm>
 #include "cv_config.h"
 #include "camera.h"
-#include "rune.h"
+#include "s_rune.h"
 
 using namespace caffe;
 using namespace std;
@@ -44,7 +44,7 @@ bool array_array_equal(int int_arr[], int int_arr_2[], int length){
     return true;
 }
 
-Rune::Rune(string net_file, string param_file) {
+s_rune::s_rune(string net_file, string param_file) {
 #ifdef CPU_ONLY
     Caffe::set_mode(Caffe::CPU);
 #else
@@ -63,9 +63,11 @@ Rune::Rune(string net_file, string param_file) {
     angle_d_yaw = (CV_CAMERA_FOV_X) / (IMAGE_WIDTH * 1.0);
 }
 
-Rune::~Rune() {}
+s_rune::~s_rune() {
 
-void Rune::update(CameraBase *cam) {
+}
+
+void s_rune::update(CameraBase *cam) {
     cam->get_img(raw_img);
     if (raw_img.size() != Size(IMAGE_WIDTH, IMAGE_HEIGHT))
         cv::resize(raw_img, raw_img, Size(IMAGE_WIDTH, IMAGE_HEIGHT));
@@ -76,12 +78,12 @@ void Rune::update(CameraBase *cam) {
 #endif
 }
 
-int Rune::get_hit_pos(CameraBase * cam){
+int s_rune::get_hit_pos(CameraBase * cam){
     get_current_rune(cam);
     return calc_position_to_hit();
 }
 
-pair<float, float> Rune::get_hit_angle(CameraBase * cam){
+pair<float, float> s_rune::get_hit_angle(CameraBase * cam){
     get_current_rune(cam);
     int pos = calc_position_to_hit();
     int cur_digit = cur_white_digits[pos];
@@ -105,7 +107,7 @@ pair<float, float> Rune::get_hit_angle(CameraBase * cam){
     return pair<float, float>(pitch, yaw);
 }
 
-int Rune::calc_position_to_hit(void){
+int s_rune::calc_position_to_hit(void){
     if(array_array_equal(new_red_seq, cur_red_digits, 5))
         cur_round_counter += 1;
     else
@@ -131,7 +133,7 @@ int Rune::calc_position_to_hit(void){
     return 1;
 }
 
-void Rune::get_current_rune(CameraBase * cam) {
+void s_rune::get_current_rune(CameraBase * cam) {
     high_resolution_clock::time_point start_time = high_resolution_clock::now();
     high_resolution_clock::time_point cur_time = high_resolution_clock::now();
     duration<double> time_elapsed = duration_cast<duration<double>>(cur_time - start_time);
@@ -172,7 +174,7 @@ void Rune::get_current_rune(CameraBase * cam) {
         new_white_seq[i] = argmax(white_matrix[i], 9) + 1;
 }
 
-void Rune::white_binarize() {
+void s_rune::white_binarize() {
     cv::cvtColor(raw_img, gray_img, cv::COLOR_BGR2GRAY);
     cv::GaussianBlur(gray_img, white_bin, Size(3,3), 0);
     cv::threshold(white_bin, white_bin, 0, 255, cv::THRESH_BINARY+cv::THRESH_OTSU);
@@ -183,7 +185,7 @@ void Rune::white_binarize() {
 #endif
 }
 
-void Rune::contour_detect() {
+void s_rune::contour_detect() {
     vector<Vec4i>           hierarchy;
     vector<vector<Point> >  contours;
 
@@ -212,7 +214,7 @@ void Rune::contour_detect() {
 #endif
 }
 
-void Rune::batch_generate() {
+void s_rune::batch_generate() {
     int offset = (CROP_SIZE - DIGIT_SIZE) / 2;
     Mat M;
     Point2f cnt_points[4];
@@ -235,7 +237,7 @@ void Rune::batch_generate() {
     }
 }
 
-void Rune::network_inference(vector<pair<int, int> > &predictions,
+void s_rune::network_inference(vector<pair<int, int> > &predictions,
         vector<Mat> & desired_digits, vector<vector<Point> > & desired_contours){
     float *input_data = input_layer->mutable_cpu_data();
     float *output_data = output_layer->mutable_cpu_data();
@@ -270,7 +272,7 @@ void Rune::network_inference(vector<pair<int, int> > &predictions,
 #endif
 }
 
-bool Rune::get_white_seq(vector<int> &seq) {
+bool s_rune::get_white_seq(vector<int> &seq) {
     white_binarize();
     contour_detect();
     if (w_contours.size() > BATCH_SIZE || w_contours.size() < 9)
@@ -300,7 +302,7 @@ bool Rune::get_white_seq(vector<int> &seq) {
     return true;
 }
 
-bool Rune::get_red_seq(vector<int> &seq) {
+bool s_rune::get_red_seq(vector<int> &seq) {
     if (!distill_red_dig() || !red_contour_detect())
         return false;
     red_batch_generate();
@@ -321,7 +323,7 @@ bool Rune::get_red_seq(vector<int> &seq) {
     return true;
 }
 
-bool Rune::red_contour_detect(void){
+bool s_rune::red_contour_detect(void){
     vector<Vec4i> hierarchy;
     vector<vector<Point> > temp_contour;
     r_contours.clear();
@@ -353,7 +355,7 @@ bool Rune::red_contour_detect(void){
     return true;
 }
 
-Mat Rune::pad_digit(const Mat & src_img){
+Mat s_rune::pad_digit(const Mat & src_img){
     assert(src_img.cols <= DIGIT_SIZE && src_img.rows <= DIGIT_SIZE);
     Mat painting = Mat::zeros(DIGIT_SIZE, DIGIT_SIZE, CV_8UC1);
     int x_offset = (DIGIT_SIZE - src_img.cols) / 2;
@@ -362,7 +364,7 @@ Mat Rune::pad_digit(const Mat & src_img){
     return painting;
 }
 
-void Rune::red_batch_generate(){
+void s_rune::red_batch_generate(){
     int offset = (CROP_SIZE - DIGIT_SIZE) / 2;
     Mat M;
     Point2f cnt_points[4];
@@ -401,7 +403,7 @@ void Rune::red_batch_generate(){
     }
 }
 
-bool Rune::distill_red_dig(void){
+bool s_rune::distill_red_dig(void){
     std::vector<Mat> bgr;
     split(raw_img, bgr);
     subtract(bgr[2], bgr[1], distilled_img);

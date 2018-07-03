@@ -33,11 +33,11 @@ using namespace std;
 #define MIN_RED_DIG_AREA 50
 
 
-class Rune {
+class s_rune {
 public:
-    Rune(string net_file = "./model/lenet.prototxt",
+    s_rune(string net_file = "./model/lenet.prototxt",
             string param_file = "./model/lenet.caffemodel");
-    ~Rune();
+    ~s_rune();
 
     /**
      * @brief this function should be called before calling any other processing function.

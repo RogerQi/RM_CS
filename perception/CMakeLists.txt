@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(perception)
 
-set(SOURCES camera.cpp rune.cpp aimbot.cpp)
+set(SOURCES camera.cpp s_rune.cpp aimbot.cpp)
 
 add_library(perception ${SOURCES})
 

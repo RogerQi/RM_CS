@@ -1,10 +1,10 @@
 #include <opencv2/opencv.hpp>
 #include "camera.h"
-#include "rune.h"
+#include "s_rune.h"
 
 int main() {
     auto cam = new SimpleCVCam();
-    auto rune = new Rune();
+    auto rune = new s_rune();
     while (true) {
         vector<int> white_seq;
         rune->update(cam);

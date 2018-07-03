@@ -173,15 +173,15 @@ vector<armor_t> ir_aimbot::get_hitboxes(CameraBase * my_cam) {
     if (long_shoot) {
         Mat crop_detect, crop_distilled;
         resize(cur_frame, crop_detect, Size(320, 180));
-        #ifdef DEBUG
-            imshow("Go1", crop_detect);
-            waitKey(1);
-        #endif
-        preprocess_frame(crop_distilled, crop_detect, Mat::ones(10, 10, CV_8UC1), Mat::ones(12, 12, CV_8UC1));
-        #ifdef DEBUG
-            imshow("Crop_Distilled", crop_distilled);
-            waitKey(1);
-        #endif
+#ifdef DEBUG
+        imshow("Go1", crop_detect);
+        waitKey(1);
+#endif
+    preprocess_frame(crop_distilled, crop_detect, Mat::ones(10, 10, CV_8UC1), Mat::ones(12, 12, CV_8UC1));
+#ifdef DEBUG
+    imshow("Crop_Distilled", crop_distilled);
+    waitKey(1);
+#endif
         poi = _get_point_of_interest(crop_distilled);
         /* process cur_frame (cropping) */
         cur_frame = _image_cropper(cur_frame, poi);
@@ -196,14 +196,14 @@ vector<armor_t> ir_aimbot::get_hitboxes(CameraBase * my_cam) {
     vector<RotatedRect> light_bars = detect_lights(cur_frame_distilled);
     light_bars = filter_lights(cur_frame, light_bars);
     //show captured light bars for debugging
-    #ifdef DEBUG
-        Mat temp_img;
-        cur_frame.copyTo(temp_img);
-        for(const RotatedRect & rect : light_bars)
-            draw_rotated_rect(temp_img, rect);
-        imshow("Light_bar", temp_img);
-        waitKey(1);
-    #endif
+#ifdef DEBUG
+    Mat temp_img;
+    cur_frame.copyTo(temp_img);
+    for(const RotatedRect & rect : light_bars)
+        draw_rotated_rect(temp_img, rect);
+    imshow("Light_bar", temp_img);
+    waitKey(1);
+#endif
     vector<armor_t> target_armors = detect_armor(light_bars, cur_frame);
     vector<armor_t> final_armor = filter_armor(target_armors);
     // correspond to original images size from camera
@@ -276,7 +276,7 @@ vector<RotatedRect> ir_aimbot::filter_lights(const Mat & orig_img,
         float light_aspect_ratio = _cal_aspect_ratio(light);
         angle = light.angle >= 90.0 ? std::abs(light.angle - 90.0) : std::abs(light.angle);
         //std::cout << "current light bar ratio" << light_aspect_ratio << std::endl;
-        if ((light_aspect_ratio < light_max_aspect_ratio && light_aspect_ratio > light_min_apsect_ratio) &&
+        if ((light_aspect_ratio < light_max_aspect_ratio && light_aspect_ratio > light_min_apsect_ratio) && 
                     (light.size.area() >= light_min_area)) {
             //calculate avg value of the specific channel
             //Mat & this_light_bar = ori_img()
