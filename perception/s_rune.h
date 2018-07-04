@@ -67,7 +67,8 @@ public:
 
     pair<float, float> fire_get_hit_angle(CameraBase *cam);
 
-    Mat fire_get_res(CameraBase *cam);
+    vector<Mat> fire_get_res(CameraBase *cam);
+
 private:
     int x_min;
     int x_max;
@@ -155,6 +156,8 @@ private:
             vector<Mat> & desired_digits, vector<vector<Point> > & desired_contours);
 
     bool fire_filter_contour(const vector<Point> & single_contour, const vector<Mat> & bgr);
+
+    vector<vector<Point> > fire_get_contours(void);
 };
 
 #endif

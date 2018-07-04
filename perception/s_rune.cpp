@@ -225,14 +225,32 @@ void s_rune::contour_detect() {
 #endif
 }
 
-Mat s_rune::fire_get_res(CameraBase *cam) {
-    Mat my_gray_img;
+vector<Mat> s_rune::fire_get_res(CameraBase *cam) {
+    this->update(cam);
+    vector<vector<Point> > filtered_contours = fire_get_contours();
+    w_contours.clear();
+    for (const vector<Point> & cnt : filtered_contours) {
+        cv::Rect bounding_box = cv::boundingRect(cnt);
+        bounding_box.width *= 1.1;
+        bounding_box.height *= 1.1;
+        cv::Point top_left = bounding_box.tl();
+        cv::Point top_right(top_left.x + bounding_box.width, top_left.y);
+        cv::Point bot_left(top_left.x, top_left.y + bounding_box.height);
+        cv::Point bot_right(bot_left.x + bounding_box.width, bot_left.y);
+        vector<Point> bbox_ctr = {bot_left, bot_right, top_left, top_right};
+        w_contours.push_back(bbox_ctr);
+    }
+    batch_generate();
+    return w_digits;
+}
+
+vector<vector<Point> > s_rune::fire_get_contours(void) {
+    Mat my_gray_binarized_img;
     vector<Vec4i> hierarchy;
     vector<vector<Point> > pre_contours, contours, post_contours;
-    this->update(cam);
-    cv::cvtColor(raw_img, my_gray_img, cv::COLOR_BGR2GRAY);
-    cv::threshold(my_gray_img, my_gray_img, 0, 255, cv::THRESH_BINARY+cv::THRESH_OTSU);
-    cv::findContours(my_gray_img, pre_contours, hierarchy, cv::RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
+    cv::cvtColor(raw_img, gray_img, cv::COLOR_BGR2GRAY);
+    cv::threshold(gray_img, my_gray_binarized_img, 0, 255, cv::THRESH_BINARY+cv::THRESH_OTSU);
+    cv::findContours(my_gray_binarized_img, pre_contours, hierarchy, cv::RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
     for (const vector<Point> & ctr : pre_contours) {
         double area_size = cv::contourArea(ctr);
         if (area_size > 400 && area_size < 4000)
@@ -244,8 +262,7 @@ Mat s_rune::fire_get_res(CameraBase *cam) {
         if (fire_filter_contour(ctr, bgr))
             post_contours.push_back(ctr);
     }
-    cv::drawContours(raw_img, post_contours, -1, cv::Scalar(255, 0, 0), 3);
-    return raw_img;
+    return post_contours;
 }
 
 bool s_rune::fire_filter_contour(const vector<Point> & single_contour, const vector<Mat> & bgr) {
@@ -262,7 +279,7 @@ bool s_rune::fire_filter_contour(const vector<Point> & single_contour, const vec
         my_mean.push_back(temp_mean.val[0]);
         my_std.push_back(temp_std.val[0]);
     }
-    if(naive_thres_test(my_mean, mean_thresh, 55) && naive_thres_test(my_std, std_thresh, 20))
+    if (naive_thres_test(my_mean, mean_thresh, 55) && naive_thres_test(my_std, std_thresh, 20))
         return true;
     return false;
 }

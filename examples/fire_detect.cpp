@@ -3,6 +3,7 @@
 #include <string>
 
 int main(void) {
+    /*
     string file_path = "fire.mp4";
     CameraBase * cam = new VideoFeed(file_path);
     int code = cv::VideoWriter::fourcc('M', 'J', 'P', 'G');
@@ -15,5 +16,6 @@ int main(void) {
         cv::waitKey(1);
     }
     save_stream.release();
+    */
     return 0;
 }
