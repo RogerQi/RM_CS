@@ -238,27 +238,21 @@ Mat s_rune::fire_get_res(CameraBase *cam) {
         if (area_size > 400 && area_size < 4000)
             contours.push_back(ctr);
     }
-    Mat dmask = cv::Mat::zeros(raw_img.rows, raw_img.cols, CV_8UC1);
+    std::vector<Mat> bgr;
+    cv::split(raw_img, bgr);
     for (const vector<Point> & ctr : contours) {
-        vector<vector<Point> > contour_wrap = {ctr};
-        cv::drawContours(dmask, contour_wrap, -1, 255, -1);
-    }
-    cv::imshow("debug", dmask);
-    cv::waitKey(1);
-    for (const vector<Point> & ctr : contours) {
-        if (fire_filter_contour(ctr))
+        if (fire_filter_contour(ctr, bgr))
             post_contours.push_back(ctr);
     }
     cv::drawContours(raw_img, post_contours, -1, cv::Scalar(255, 0, 0), 3);
     return raw_img;
 }
 
-bool s_rune::fire_filter_contour(const vector<Point> & single_contour) {
+bool s_rune::fire_filter_contour(const vector<Point> & single_contour, const vector<Mat> & bgr) {
     vector<float> mean_thresh = {150, 210, 230};
     vector<float> std_thresh = {50, 40, 25};
+    vector<float> random_std_thresh = {10, 10, 8};
     vector<vector<Point> > contour_wrap = {single_contour};
-    std::vector<Mat> bgr;
-    cv::split(raw_img, bgr);
     Mat mask = cv::Mat::zeros(bgr[0].rows, bgr[0].cols, CV_8UC1);
     cv::drawContours(mask, contour_wrap, -1, 255, -1);
     vector<float> my_mean, my_std;

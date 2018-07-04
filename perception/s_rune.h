@@ -154,7 +154,7 @@ private:
     void network_inference(vector<pair<int, int> > &predictions,
             vector<Mat> & desired_digits, vector<vector<Point> > & desired_contours);
 
-    bool fire_filter_contour(const vector<Point> & single_contour);
+    bool fire_filter_contour(const vector<Point> & single_contour, const vector<Mat> & bgr);
 };
 
 #endif
