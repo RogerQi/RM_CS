@@ -13,7 +13,7 @@ int main(void) {
         vector<Mat> detected_digit = rune_getter.fire_get_res(cam);
         if (frame_counter % 8 != 0) continue;
         for (const Mat & dgt : detected_digit) {
-            cv::imwrite(std::to_string(++counter) + ".jpg", dgt);
+            //cv::imwrite(std::to_string(++counter) + ".jpg", dgt);
         }
     }
     return 0;

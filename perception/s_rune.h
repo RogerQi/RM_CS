@@ -35,7 +35,7 @@ using namespace std;
 class s_rune {
 public:
     s_rune(string net_file = "./model/lenet.prototxt",
-            string param_file = "./model/lenet.caffemodel");
+            string param_file = "./model/mnist_iter_75000.caffemodel");
     ~s_rune();
 
     /**
@@ -152,8 +152,7 @@ private:
      *                    idx is the corresponding index within the w_contours
      *                    array, and digit_id is the predicted digit number
      */
-    void network_inference(vector<pair<int, int> > &predictions,
-            vector<Mat> & desired_digits, vector<vector<Point> > & desired_contours);
+    void network_inference(vector<pair<int, int> > &predictions, vector<Mat> & desired_digits);
 
     bool fire_filter_contour(const vector<Point> & single_contour, const vector<Mat> & bgr);
 

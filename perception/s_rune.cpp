@@ -241,6 +241,8 @@ vector<Mat> s_rune::fire_get_res(CameraBase *cam) {
         w_contours.push_back(bbox_ctr);
     }
     batch_generate();
+    vector<pair<int, int> > predictions;
+    network_inference(predictions, w_digits);
     return w_digits;
 }
 
@@ -307,8 +309,7 @@ void s_rune::batch_generate() {
     }
 }
 
-void s_rune::network_inference(vector<pair<int, int> > &predictions,
-        vector<Mat> & desired_digits, vector<vector<Point> > & desired_contours){
+void s_rune::network_inference(vector<pair<int, int> > &predictions, vector<Mat> & desired_digits){
     float *input_data = input_layer->mutable_cpu_data();
     float *output_data = output_layer->mutable_cpu_data();
     for (auto &dig: desired_digits) {
@@ -350,7 +351,7 @@ bool s_rune::get_white_seq(vector<int> &seq) {
     batch_generate();
 
     vector<pair<int, int> > predictions;
-    network_inference(predictions, w_digits, w_contours);
+    network_inference(predictions, w_digits);
     if (predictions.size() != 9)
         return false;
 
@@ -377,7 +378,7 @@ bool s_rune::get_red_seq(vector<int> &seq) {
         return false;
     red_batch_generate();
     vector<pair<int, int> > predictions;
-    network_inference(predictions, r_digits, r_contours);
+    network_inference(predictions, r_digits);
     if(predictions.size() < 5){
         return false;
     }
