@@ -68,7 +68,6 @@ execute_process( COMMAND "${CMAKE_COMMAND}" "-E" "create_symlink" "${PROJECT_SOU
 #endforeach()
 
 # build samples & utilities
-#add_subdirectory(lenet-console)
 
 # install
 foreach(include ${inferenceIncludes})
