@@ -9,6 +9,6 @@
 
 ## IDE, System, and Language Usage
 * No requirement for IDE.
-* High precedence for Mac, most READMEs are written concerning you are using mac or linux.
-* We recommend you to install python2 and python3 with homebrew, most READMEs are written in that case, if your python cannot support you to follow the instruction, you are also recommended to figure out a way by searching by your self, or reinstall python with [homebrew](https://brew.sh/). (In most cases we will add official links after every README, incase you may need help with different operating environments) 
-* We will also use C++
+~~* High precedence for Mac, most READMEs are written concerning you are using mac or linux.~~
+~~* We recommend you to install python2 and python3 with homebrew, most READMEs are written in that case, if your python cannot support you to follow the instruction, you are also recommended to figure out a way by searching by your self, or reinstall python with [homebrew](https://brew.sh/). (In most cases we will add official links after every README, incase you may need help with different operating environments)~~
+* Tested on Nvidia Jetson TX2 Only!

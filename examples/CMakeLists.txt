@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.8)
 project(examples)
 
+#file(GLOB lenetCameraSources *.cpp)
+#file(GLOB lenetCameraIncludes *.h )
+
 add_executable(single_shot ./single_shot.cpp)
 add_executable(armor_detect ./video_armor_detector.cpp)
 add_executable(protocol_test ./protocol_test.cpp)
@@ -8,6 +11,7 @@ add_executable(rune_pos ./rune_pos.cpp)
 add_executable(rune_angle ./rune_angle.cpp)
 add_executable(fake_transmit ./fake_transmit.cpp)
 add_executable(fire_detect ./fire_detect.cpp)
+add_executable(test_tensorrt ./test_tensorrt.cpp)
 
 target_link_libraries(fire_detect perception)
 target_link_libraries(rune_angle perception)
@@ -16,3 +20,4 @@ target_link_libraries(single_shot perception)
 target_link_libraries(armor_detect perception)
 target_link_libraries(protocol_test communication)
 target_link_libraries(fake_transmit communication)
+target_link_libraries(test_tensorrt jetson-inference)
