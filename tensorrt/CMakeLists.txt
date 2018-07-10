@@ -75,7 +75,6 @@ foreach(image ${imageData})
 endforeach()
 
 # build samples & utilities
-add_subdirectory(lenet-console)
 
 # install
 foreach(include ${inferenceIncludes})
