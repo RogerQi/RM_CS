@@ -6,13 +6,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")	# -std=gnu++11
 set(BUILD_DEPS "YES" CACHE BOOL "If YES, will install dependencies into sandbox.  Automatically reset to NO after dependencies are installed.")
 
-
-# Qt is used to load images (installed by ubuntu-desktop)
-#find_package(Qt4 REQUIRED)
-#include(${QT_USE_FILE})
-#add_definitions(${QT_DEFINITIONS})
-
-
 # setup CUDA
 find_package(CUDA)
 
@@ -36,8 +29,8 @@ set(PROJECT_INCLUDE_DIR ${PROJECT_OUTPUT_DIR}/include)
 file(MAKE_DIRECTORY ${PROJECT_INCLUDE_DIR})
 file(MAKE_DIRECTORY ${PROJECT_OUTPUT_DIR}/bin)
 
-message("-- system arch:  ${CMAKE_SYSTEM_PROCESSOR}")
-message("-- output path:  ${PROJECT_OUTPUT_DIR}")
+#message("-- system arch:  ${CMAKE_SYSTEM_PROCESSOR}")
+#message("-- output path:  ${PROJECT_OUTPUT_DIR}")
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_OUTPUT_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_OUTPUT_DIR}/lib)
@@ -52,7 +45,7 @@ file(GLOB inferenceSources *.cpp *.cu util/*.cpp util/cuda/*.cu)
 file(GLOB inferenceIncludes *.h util/*.h util/cuda/*.h)
 
 cuda_add_library(jetson-inference SHARED ${inferenceSources})
-target_link_libraries(jetson-inference nvcaffe_parser nvinfer GL GLEW gstreamer-1.0 gstapp-1.0 ${OpenCV_LIBS})		# gstreamer-0.10 gstbase-0.10 gstapp-0.10
+target_link_libraries(jetson-inference drm nvcaffe_parser nvinfer GL GLEW gstreamer-1.0 gstapp-1.0 ${OpenCV_LIBS})		# gstreamer-0.10 gstbase-0.10 gstapp-0.10
 
 
 # transfer all headers to the include directory
@@ -67,15 +60,15 @@ execute_process( COMMAND "${CMAKE_COMMAND}" "-E" "create_symlink" "${PROJECT_SOU
 
 
 # copy image data
-file(GLOB imageData ${PROJECT_SOURCE_DIR}/data/images/*)
+#file(GLOB imageData ${PROJECT_SOURCE_DIR}/data/images/*)
 
-foreach(image ${imageData})
-	message("-- Copying ${image}")
-	file(COPY ${image} DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-endforeach()
+#foreach(image ${imageData})
+#	message("-- Copying ${image}")
+#	file(COPY ${image} DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+#endforeach()
 
 # build samples & utilities
-add_subdirectory(lenet-console)
+#add_subdirectory(lenet-console)
 
 # install
 foreach(include ${inferenceIncludes})

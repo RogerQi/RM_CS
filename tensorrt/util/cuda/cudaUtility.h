@@ -35,25 +35,25 @@
  * @return the original cudaError_t result
  * @ingroup util
  */
-#define CUDA(x)				cudaCheckError((x), #x, __FILE__, __LINE__)
+#define CUDA(x) cudaCheckError((x), #x, __FILE__, __LINE__)
 
 /**
  * Evaluates to true on success
  * @ingroup util
  */
-#define CUDA_SUCCESS(x)			(CUDA(x) == cudaSuccess)
+#define CUDA_SUCCESS(x)  (CUDA(x) == cudaSuccess)
 
 /**
  * Evaluates to true on failure
  * @ingroup util
  */
-#define CUDA_FAILED(x)			(CUDA(x) != cudaSuccess)
+#define CUDA_FAILED(x)  (CUDA(x) != cudaSuccess)
 
 /**
  * Return from the boolean function if CUDA call fails
  * @ingroup util
  */
-#define CUDA_VERIFY(x)			if(CUDA_FAILED(x))	return false;
+#define CUDA_VERIFY(x)  if(CUDA_FAILED(x)) return false;
 
 /**
  * LOG_CUDA string.
@@ -74,7 +74,7 @@
  */
 inline cudaError_t cudaCheckError(cudaError_t retval, const char* txt, const char* file, int line )
 {
-#if !defined(CUDA_TRACE)
+#ifndef CUDA_TRACE
 	if( retval == cudaSuccess)
 		return cudaSuccess;
 #endif
