@@ -1,4 +1,5 @@
 #include "rune_bot.h"
+#include <iostream>
 
 Point2f dst_points[4] = {Point2f(0, 0), Point2f(CROP_SIZE, 0),
                     Point2f(0, CROP_SIZE), Point2f(CROP_SIZE, CROP_SIZE)};
@@ -55,7 +56,10 @@ void rune_bot::cam_update(void) {
     if (cur_frame.raw_img.size() != Size(IMAGE_WIDTH, IMAGE_HEIGHT))
         cv::cuda::resize(cur_frame.raw_img, cur_frame.raw_img, Size(IMAGE_WIDTH, IMAGE_HEIGHT), 0, 0, cv::INTER_LINEAR);
     cv::cuda::cvtColor(cur_frame.raw_img, cur_frame.gray_img, cv::COLOR_BGR2GRAY);
-    cv::cuda::threshold(cur_frame.gray_img, cur_frame.otsu_threshed_img, 0, 255, cv::THRESH_BINARY+cv::THRESH_OTSU);
+    Mat temp;
+    this->cur_frame.gray_img.download(temp);
+    cv::threshold(temp, temp, 0, 255, cv::THRESH_BINARY+cv::THRESH_OTSU);
+    cur_frame.otsu_threshed_img.upload(temp);
     this->cur_frame.bgr.clear();
     cv::cuda::split(cur_frame.raw_img, cur_frame.bgr);
 }
@@ -129,7 +133,6 @@ vector<cv::cuda::GpuMat> rune_bot::batch_generate(vector<vector<Point> > & conto
 
     for (vector<Point> &cnt: contours) {
         if (padding) {
-            cv::cuda::GpuMat cache_mask;
             int x_min = IMAGE_WIDTH + 1;
             int y_min = IMAGE_HEIGHT + 1;
             int x_max = -1;
@@ -150,8 +153,10 @@ vector<cv::cuda::GpuMat> rune_bot::batch_generate(vector<vector<Point> > & conto
             Mat mask = cv::Mat::zeros(ori_gray_img.rows, ori_gray_img.cols, ori_gray_img.type());
             vector<vector<Point> > contour_wrap = {cnt};
             cv::drawContours(mask, contour_wrap, -1, 255, -1);
-            ori_gray_img.copyTo(cache_mask, mask);
-            cv::cuda::GpuMat digit_img(cache_mask, roi);
+            cv::cuda::GpuMat cache_masked, gpu_mask;
+            gpu_mask.upload(mask);
+            ori_gray_img.copyTo(cache_masked, gpu_mask);
+            cv::cuda::GpuMat digit_img(cache_masked, roi);
             ret.push_back(digit_img);
         } else {
             cv::cuda::GpuMat digit_img;
@@ -164,7 +169,11 @@ vector<cv::cuda::GpuMat> rune_bot::batch_generate(vector<vector<Point> > & conto
                 cnt_points[i] = Point2f(cnt[i]);
             Mat M = cv::getPerspectiveTransform(cnt_points, dst_points);
             cv::cuda::warpPerspective(ori_gray_img, digit_img, M, Size(CROP_SIZE, CROP_SIZE));
-            cv::cuda::bitwise_not(digit_img(cv::Rect(offset, offset, DIGIT_SIZE, DIGIT_SIZE)), digit_img);
+            // No idea why cv::cuda::bitwise_not is not working. Use CPU implementation here...
+            cv::Mat ret_digit_img;
+            digit_img(cv::Rect(offset, offset, DIGIT_SIZE, DIGIT_SIZE)).download(ret_digit_img);
+            cv::bitwise_not(ret_digit_img, ret_digit_img);
+            digit_img.upload(ret_digit_img);
             ret.push_back(digit_img);
         }
     }
@@ -259,7 +268,9 @@ vector<vector<Point> > rune_bot::white_get_contours(void) {
 vector<vector<Point> > rune_bot::fire_get_contours(void) {
     vector<Vec4i> hierarchy;
     vector<vector<Point> > pre_contours, contours, post_contours;
-    cv::findContours(this->cur_frame.otsu_threshed_img, pre_contours, hierarchy, cv::RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
+    cv::Mat temp;
+    this->cur_frame.otsu_threshed_img.download(temp);
+    cv::findContours(temp, pre_contours, hierarchy, cv::RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
     for (const vector<Point> & ctr : pre_contours) {
         double area_size = cv::contourArea(ctr);
         if (area_size > 400 && area_size < 4000)
@@ -312,17 +323,35 @@ bool rune_bot::fire_filter_contour(const vector<Point> & single_contour) {
     Mat mask = cv::Mat::zeros(this->cur_frame.bgr[0].rows, this->cur_frame.bgr[0].cols, CV_8UC1);
     cv::drawContours(mask, contour_wrap, -1, 255, -1);
     vector<float> my_mean, my_std;
-    cv::cuda::GpuMat cache_mask;
     for (const cv::cuda::GpuMat & my_mat : this->cur_frame.bgr) {
         cv::Scalar temp_mean, temp_std;
-        my_mat.copyTo(cache_mask, mask);
-        cv::cuda::meanStdDev(cache_mask, temp_mean, temp_std);
+        Mat cache_channel;
+        my_mat.download(cache_channel);
+        cv::meanStdDev(cache_channel, temp_mean, temp_std, mask);
         my_mean.push_back(temp_mean.val[0]);
         my_std.push_back(temp_std.val[0]);
     }
     if (naive_thres_test(my_mean, mean_thresh, 55) && naive_thres_test(my_std, std_thresh, 20))
         return true;
     return false;
+}
+
+vector<digit_t> rune_bot::recognize_large_digits(void) {
+    vector<vector<Point> > large_contours;
+    for (size_t i = 0; i < this->large_digits.size(); ++i)
+        large_contours.push_back(this->large_digits[i].contour);
+    assert(large_contours.size() == 9);
+    vector<cv::cuda::GpuMat> digit_images = this->batch_generate(large_contours, this->cur_frame.gray_img, false);
+    vector<predicted_class> nn_results = this->nn_inference(digit_images);
+    for (int i = 0; i < nn_results.size(); ++i) {
+        if (nn_results[i] == 0 || nn_results[i] == 10)
+            continue;
+        digit_t digit_instance;
+        digit_instance.recent_results.push_back(nn_results[i]);
+        digit_instance.contour = fire_contours[i];
+        ret.push_back(digit_instance);
+    }
+    return ret;
 }
 
 }

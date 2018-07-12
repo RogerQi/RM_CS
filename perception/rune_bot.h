@@ -45,6 +45,14 @@ namespace perception {
         pair<float, float> comm_get_abs_gimbal_angle(void);
 
         bool comm_rune_prep(void);
+
+        void cam_update(void);
+
+        vector<digit_t> recognize_large_digits(void);
+
+        vector<digit_t> fire_acquire_digits(void);
+
+        inline cv::cuda::GpuMat get_cur_frame(void) { return cur_frame.raw_img; }
     private:
         CameraBase *my_cam;
 
@@ -53,10 +61,6 @@ namespace perception {
         rune_detect_frame_t cur_frame;
 
         LeNet *net;
-
-        void cam_update(void);
-
-        vector<digit_t> fire_acquire_digits(void);
 
         vector<digit_t> white_acquire_digits(void);
 
