@@ -6,6 +6,7 @@
 #include <cstring>
 #include <algorithm>
 #include <iostream>
+#include "cv_utils.h"
 #include "cv_config.h"
 #include "camera.h"
 #include "s_rune.h"
@@ -14,15 +15,6 @@ using namespace caffe;
 using namespace std;
 using namespace cv;
 using namespace std::chrono;
-
-template<class T>
-bool naive_thres_test(const vector<T> & query, const vector<T> & baseline, float thresh) {
-    assert(query.size() == baseline.size());
-    for (size_t i = 0; i < query.size(); ++i) {
-        if (fabs(query[i] - baseline[i]) > thresh) return false;
-    }
-    return true;
-}
 
 bool cmp_x(Point &i, Point &j) { return i.x < j.x; }
 

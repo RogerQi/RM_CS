@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 project(perception)
 
-set(SOURCES camera.cpp s_rune.cpp aimbot.cpp)
+set(SOURCES camera.cpp rune_bot.cpp)
 
 add_library(perception ${SOURCES})
 
-target_link_libraries(perception ${OpenCV_LIBS} ${Caffe_LIBRARIES} glog boost_system pthread)
+target_link_libraries(perception ${OpenCV_LIBS} glog boost_system pthread jetson-inference)
