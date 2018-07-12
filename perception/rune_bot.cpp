@@ -79,6 +79,7 @@ vector<digit_t> rune_bot::fire_acquire_digits(void) {
         digit_instance.contour = fire_contours[i];
         ret.push_back(digit_instance);
     }
+    this->large_digits = ret;
     return ret;
 }
 
@@ -337,10 +338,10 @@ bool rune_bot::fire_filter_contour(const vector<Point> & single_contour) {
 }
 
 vector<digit_t> rune_bot::recognize_large_digits(void) {
+    vector<digit_t> ret;
     vector<vector<Point> > large_contours;
     for (size_t i = 0; i < this->large_digits.size(); ++i)
         large_contours.push_back(this->large_digits[i].contour);
-    assert(large_contours.size() == 9);
     vector<cv::cuda::GpuMat> digit_images = this->batch_generate(large_contours, this->cur_frame.gray_img, false);
     vector<predicted_class> nn_results = this->nn_inference(digit_images);
     for (int i = 0; i < nn_results.size(); ++i) {
@@ -348,7 +349,7 @@ vector<digit_t> rune_bot::recognize_large_digits(void) {
             continue;
         digit_t digit_instance;
         digit_instance.recent_results.push_back(nn_results[i]);
-        digit_instance.contour = fire_contours[i];
+        digit_instance.contour = large_contours[i];
         ret.push_back(digit_instance);
     }
     return ret;

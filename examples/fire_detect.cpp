@@ -9,9 +9,18 @@ int main(void) {
     int code = cv::VideoWriter::fourcc('M', 'J', 'P', 'G');
     cv::VideoWriter save_stream("fire_rune_detect.avi", code, 30, Size(IMAGE_WIDTH, IMAGE_HEIGHT));
     perception::rune_bot rune_getter(cam);
+    rune_getter.cam_update();
+    vector<digit_t> fire_digits = rune_getter.fire_acquire_digits();
+    bool detected_ = false;
     while (cam->is_alive()) {
         rune_getter.cam_update();
-        vector<digit_t> fire_digits = rune_getter.fire_acquire_digits();
+        vector<digit_t> fire_digits;
+        if (detected_) {
+            fire_digits = rune_getter.recognize_large_digits();
+        } else {
+            fire_digits = rune_getter.fire_acquire_digits();
+            if(fire_digits.size() == 9) detected_ = true;
+        }
         Mat cur_frame;
         rune_getter.get_cur_frame().download(cur_frame);
         vector<vector<Point> > ctrs;
