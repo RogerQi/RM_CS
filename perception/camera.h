@@ -14,9 +14,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#ifdef TX2
-    #include <linux/i2c-dev.h>
-#endif
+#include <linux/i2c-dev.h>
 
 using namespace cv;
 using namespace std;
@@ -83,7 +81,7 @@ public:
 
     /**
      * @brief   virtual implementation of how to read images
-     * @return  Mat object read directly from the camera 
+     * @return  Mat object read directly from the camera
      */
     Mat cam_read();
 protected:
@@ -95,6 +93,7 @@ protected:
  */
 class CSICam: public SimpleCVCam {
 public:
+    CSICam();
     /**
      * @brief constructor for CSICam
      * @param pipeline Gstreamer pipeline
@@ -108,6 +107,8 @@ public:
  */
 class OV5693Cam: public CSICam {
 public:
+    OV5693Cam();
+
     /**
      * @brief constructor for OV5693Cam
      * @param pipeline Gstreamer pipeline
@@ -118,12 +119,12 @@ public:
     /**
      * @brief change camera focal length
      * @param focus 10 bit focal length value within [0 1023] (0 being the longest focal length)
-     * @return 
+     * @return
      */
     bool set_focus(uint16_t focus);
-    
+
 private:
-    bool    i2c_init(char *i2c_file);
+    bool    i2c_init(const char *i2c_file);
     bool    i2c_write(uint8_t cmd, uint8_t val);
 
     int i2c_fd = -1;

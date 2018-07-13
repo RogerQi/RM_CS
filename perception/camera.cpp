@@ -2,6 +2,7 @@
 #include <thread>
 #include <chrono>
 #include <iostream>
+#include <string>
 
 /* ---------------------------- CameraBase ---------------------------*/
 
@@ -52,19 +53,27 @@ Mat SimpleCVCam::cam_read() {
 
 /* ---------------------------- CSICam ---------------------------*/
 
+CSICam::CSICam() {
+    std::string default_pipeline = "nvcamerasrc ! video/x-raw(memory:NVMM), width=(int)640, height=(int)360,format=(string)I420, framerate=(fraction)60/1 ! nvvidconv flip-method=0 ! video/x-raw, format=(string)BGRx ! videoconvert ! video/x-raw, format=(string)BGR ! appsink";
+    cap = VideoCapture(default_pipeline.c_str());
+}
+
 CSICam::CSICam(char *pipeline) {
     cap = VideoCapture(pipeline);
     start();
 }
 
 /* -------------------------- OV5693Cam ----------------------- */
-
+OV5693Cam::OV5693Cam() : CSICam() {
+    std::string DEFAULT_I2C_ = "/dev/i2c-6";
+    i2c_init(DEFAULT_I2C_.c_str());
+}
 
 OV5693Cam::OV5693Cam(char *pipeline, char *i2c_file) : CSICam(pipeline) {
     i2c_init(i2c_file);
 }
 
-bool OV5693Cam::i2c_init(char *i2c_file) {
+bool OV5693Cam::i2c_init(const char *i2c_file) {
     int file;
 
     if ((file = open(i2c_file, O_RDWR)) < 0) {
@@ -72,12 +81,10 @@ bool OV5693Cam::i2c_init(char *i2c_file) {
         return false;
     }
 
-#ifdef USE_GPU
     if (ioctl(file, I2C_SLAVE, ad5823_addr) < 0) {
         std::cerr << "cannot set i2c slave " << ad5823_addr << std::endl;
         return false;
     }
-#endif
 
     i2c_fd = file;
 
