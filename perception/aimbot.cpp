@@ -1,4 +1,5 @@
 #include "aimbot.h"
+#include "utils.h"
 
 static bool long_shoot = false;
 
@@ -31,16 +32,6 @@ template<> size_t get_target<armor_t>(const vector<armor_t> & tar) {
     return get_target(true_rect);
 }
 
-void distill_color(const Mat & src_img, Mat & dst_img, string color_type) {
-    std::vector<cv::Mat> bgr;
-    cv::split(src_img, bgr);
-    if (color_type == "red") {
-        cv::subtract(bgr[2], bgr[1], dst_img);
-    } else {
-        cv::subtract(bgr[0], bgr[2], dst_img);
-    }
-}
-
 Mat armor_perspective_transform(const Mat & src_img, const RotatedRect & roi){
     Mat cropped, M;
     Point2f dst_points[4] = {Point2f(0, 0), Point2f(0, 100),
@@ -61,7 +52,7 @@ void draw_rotated_rect(Mat & mat_to_draw, RotatedRect rect_to_draw) {
     Point2f rect_points[4];
     rect_to_draw.points(rect_points);
     for(int i = 0; i < 4; i++)
-        line(mat_to_draw, rect_points[i], rect_points[(i+1) % 4], Scalar(0, 255, 0), 1, 8);
+        cv::line(mat_to_draw, rect_points[i], rect_points[(i+1) % 4], Scalar(0, 255, 0), 1, 8);
 }
 
 float _cal_aspect_ratio(RotatedRect light) {
@@ -127,25 +118,10 @@ Mat _image_cropper(const Mat & frame, Point2f poi) {
 }
 
 ir_aimbot::ir_aimbot(string color_type_str){
-    #ifdef CPU_ONLY
-        Caffe::set_mode(Caffe::CPU);
-    #else
-        Caffe::DeviceQuery();
-        Caffe::set_mode(Caffe::GPU);
-        Caffe::SetDevice(0);
-    #endif
-    net = new Net<float>(NET_FILE, caffe::TEST);
-    net->CopyTrainedLayersFrom(PARAM_FILE);
-    input_layer = net->input_blobs()[0];
-    input_layer->Reshape(MODEL_BATCH_SIZE, 1, 100, 100);
-    net->Reshape();
-    input_layer = net->input_blobs()[0];
-    output_layer = net->output_blobs()[0];
     my_color = color_type_str;
     my_distillation_threshold = blue_threshold;
     if(my_color == "red")
         my_distillation_threshold = red_threshold;
-
 }
 
 ir_aimbot::~ir_aimbot(){
@@ -153,14 +129,26 @@ ir_aimbot::~ir_aimbot(){
 }
 
 void ir_aimbot::preprocess_frame(Mat & cur_frame_distilled, const Mat & cur_frame, Mat color_kernel, Mat gray_kernel){
-    Mat cur_frame_gray_, cur_frame_gray_binarized;
-    cvtColor(cur_frame, cur_frame_gray_, COLOR_BGR2GRAY);
-    threshold(cur_frame_gray_, cur_frame_gray_binarized, gray_threshold, 255, THRESH_BINARY);
-    distill_color(cur_frame, cur_frame_distilled, my_color);
-    threshold(cur_frame_distilled, cur_frame_distilled, my_distillation_threshold, 255, THRESH_BINARY);
-    dilate(cur_frame_distilled, cur_frame_distilled, color_kernel, Point(-1, -1), 1);
-    dilate(cur_frame_gray_binarized, cur_frame_gray_binarized, gray_kernel, Point(-1, -1), 1);
-    cur_frame_distilled = cur_frame_distilled & cur_frame_gray_binarized;
+    cv::cuda::GpuMat cur_frame_gray_, cur_frame_gray_binarized, ret;
+    cur_frame_gray_.upload(cur_frame);
+    vector<cv::cuda::GpuMat> bgr;
+    cv::cuda::split(cur_frame_gray_, bgr);
+    if (my_color == "red") {
+        distill_color_channel(bgr, 2, ret);
+    } else {
+        distill_color_channel(bgr, 0, ret);
+    }
+    cv::cuda::cvtColor(cur_frame_gray_, cur_frame_gray_, COLOR_BGR2GRAY);
+    cv::cuda::threshold(cur_frame_gray_, cur_frame_gray_binarized, gray_threshold, 255, cv::THRESH_BINARY);
+    cv::cuda::threshold(ret, ret, my_distillation_threshold, 255, cv::THRESH_BINARY);
+    Ptr<cuda::Filter> color_filter = cv::cuda::createMorphologyFilter(cv::MORPH_DILATE,
+        CV_8UC1, color_kernel);
+    Ptr<cuda::Filter> gray_filter = cv::cuda::createMorphologyFilter(cv::MORPH_DILATE,
+        CV_8UC1, gray_kernel);
+    color_filter->apply(ret, ret);
+    gray_filter->apply(cur_frame_gray_binarized, cur_frame_gray_binarized);
+    cv::cuda::bitwise_and(ret, cur_frame_gray_binarized, ret);
+    ret.download(cur_frame_distilled);
 }
 
 vector<armor_t> ir_aimbot::get_hitboxes(CameraBase * my_cam) {
@@ -177,7 +165,7 @@ vector<armor_t> ir_aimbot::get_hitboxes(CameraBase * my_cam) {
         imshow("Go1", crop_detect);
         waitKey(1);
 #endif
-    preprocess_frame(crop_distilled, crop_detect, Mat::ones(10, 10, CV_8UC1), Mat::ones(12, 12, CV_8UC1));
+    preprocess_frame(crop_distilled, crop_detect, Mat::ones(5, 5, CV_8UC1), Mat::ones(6, 6, CV_8UC1));
 #ifdef DEBUG
     imshow("Crop_Distilled", crop_distilled);
     waitKey(1);
@@ -276,7 +264,7 @@ vector<RotatedRect> ir_aimbot::filter_lights(const Mat & orig_img,
         float light_aspect_ratio = _cal_aspect_ratio(light);
         angle = light.angle >= 90.0 ? std::abs(light.angle - 90.0) : std::abs(light.angle);
         //std::cout << "current light bar ratio" << light_aspect_ratio << std::endl;
-        if ((light_aspect_ratio < light_max_aspect_ratio && light_aspect_ratio > light_min_apsect_ratio) && 
+        if ((light_aspect_ratio < light_max_aspect_ratio && light_aspect_ratio > light_min_apsect_ratio) &&
                     (light.size.area() >= light_min_area)) {
             //calculate avg value of the specific channel
             //Mat & this_light_bar = ori_img()
@@ -335,32 +323,7 @@ vector<armor_t> ir_aimbot::detect_armor(vector<RotatedRect> & filtered_light_bar
 
 vector<armor_t> ir_aimbot::filter_armor(const vector<armor_t> & armor_obtained){
     vector<armor_t> filtered;
-    float *input_data = input_layer->mutable_cpu_data();
-    float *output_data = output_layer->mutable_cpu_data();
-    for (const armor_t & armor_bd: armor_obtained) {
-        Mat channel(FEEDING_IMG_HEIGHT, FEEDING_IMG_WIDTH, CV_32FC1, input_data);
-        Mat normalized_armor = armor_perspective_transform(cur_frame, armor_bd.armor);
-        normalized_armor.convertTo(channel, CV_32FC1);
-        //channel /= 255;
-        input_data += FEEDING_IMG_HEIGHT * FEEDING_IMG_WIDTH;
-    }
-
-    net->Forward();
-
-    for (size_t i = 0; i < armor_obtained.size(); i++) {
-        vector<float> prob;
-#ifdef DEBUG
-        std::cout << "[Armor Detection] Output layer's channel num: " << output_layer->channels() << std::endl;
-        std::cout << "[Armor Detection]Prob 0: " << output_data[0] << std::endl;
-        std::cout << "[Armor Detection]Prob 1: " << output_data[1] << std::endl;
-#endif
-        for(int j = 0; j < output_layer->channels(); j++){
-            prob.push_back(output_data[j]);
-        }
-        output_data += output_layer->channels();
-        if(prob[1] > CLASSIFIER_THRESHOLD){
-            filtered.push_back(armor_obtained[i]);
-        }
-    }
+    for (size_t i = 0; i < armor_obtained.size(); ++i)
+        filtered.push_back(armor_obtained[i]);
     return filtered;
 }

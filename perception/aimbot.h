@@ -1,9 +1,6 @@
 #ifndef AIMBOT_H_
 #define AIMBOT_H_
 
-#include <caffe/caffe.hpp>
-#include <caffe/blob.hpp>
-#include <caffe/util/io.hpp>
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include <string>
@@ -11,11 +8,11 @@
 #include <algorithm>
 #include <math.h>
 #include "cv_config.h"
+#include "cv_utils.h"
 #include "aimbot_config.h"
 
 using std::string;
 using namespace cv;
-using namespace caffe;
 
 #define MODEL_BATCH_SIZE     30
 #define FEEDING_IMG_WIDTH    100
@@ -163,16 +160,12 @@ public:
     inline vector<armor_t> get_latest_visible_armors(void) { return cur_visible_armors; }
 
 private:
-    /* Caffe NN utilities */
-    caffe::Net<float>       *net;
-    caffe::Blob<float>      *input_layer;
-    caffe::Blob<float>      *output_layer;
 
     Mat cur_frame, ori_cur_frame;
 
     vector<armor_t> cur_visible_armors;
 
-    string my_color;
+    std::string my_color;
 
     int my_distillation_threshold;
 
