@@ -64,7 +64,7 @@ public:
 protected:
     unsigned short _write_index;
     unsigned short  _read_index;
-    vector<Mat> _buffer;
+    std::vector<cv::Mat> _buffer;
     mutex _lock;
 };
 
@@ -73,11 +73,14 @@ protected:
  */
 class SimpleCVCam: public CameraBase {
 public:
+    SimpleCVCam();
     /**
      * @brief constructor for SimpleCVCam
      * @param device_id device id as in camera index [default to 0]
      */
-    SimpleCVCam(unsigned short device_id = 0);
+    SimpleCVCam(unsigned short device_id);
+
+    ~SimpleCVCam();
 
     /**
      * @brief   virtual implementation of how to read images
@@ -128,7 +131,7 @@ private:
     bool    i2c_write(uint8_t cmd, uint8_t val);
 
     int i2c_fd = -1;
-    static const uint16_t   default_focus   = 500;
+    static const uint16_t   default_focus   = 100;
     static const uint16_t   ad5823_addr     = 0x0c;
     static const uint8_t    VCM_MOVE_TIME   = 0x03;
     static const uint8_t    VCM_MODE        = 0x02;

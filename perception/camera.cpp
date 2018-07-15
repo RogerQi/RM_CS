@@ -1,10 +1,27 @@
 #include "camera.h"
+#include "cv_config.h"
 #include <thread>
 #include <chrono>
 #include <iostream>
 #include <string>
 
 /* ---------------------------- CameraBase ---------------------------*/
+
+std::string get_cam_pipeline(int width, int height, int fps, bool flip, bool auto_exposure) {
+    int flip_ = 0;
+    if (flip)
+        flip_ = 2;
+    std::string cam_ctl_command = "";
+    if (!auto_exposure) {
+        cam_ctl_command += "auto-exposure=1 exposure-time=0.15 aeLock=true";
+    }
+    return "nvcamerasrc " + cam_ctl_command +
+        " ! video/x-raw(memory:NVMM), width=(int)" +
+        std::to_string(width) + ", height=(int)" + std::to_string(height) +
+        ",format=(string)NV12, framerate=(fraction)" + std::to_string(fps) +
+        "/1 ! nvvidconv flip-method=" + std::to_string(flip_) +
+        " ! video/x-raw, format=(string)BGRx ! videoconvert ! video/x-raw, format=(string)BGR ! appsink";
+}
 
 CameraBase::CameraBase() {
     _buffer.resize(2);
@@ -40,9 +57,17 @@ void CameraBase::start() {
 
 /* ---------------------------- SimpleCVCam ---------------------------*/
 
+SimpleCVCam::SimpleCVCam() : CameraBase() {
+    // nothing
+}
+
 SimpleCVCam::SimpleCVCam(unsigned short device_id) : CameraBase() {
     cap = VideoCapture(device_id);
     start();
+}
+
+SimpleCVCam::~SimpleCVCam() {
+    cap.release();
 }
 
 Mat SimpleCVCam::cam_read() {
@@ -53,28 +78,32 @@ Mat SimpleCVCam::cam_read() {
 
 /* ---------------------------- CSICam ---------------------------*/
 
-CSICam::CSICam() {
-    std::string default_pipeline = "nvcamerasrc ! video/x-raw(memory:NVMM), width=(int)640, height=(int)360,format=(string)I420, framerate=(fraction)60/1 ! nvvidconv flip-method=0 ! video/x-raw, format=(string)BGRx ! videoconvert ! video/x-raw, format=(string)BGR ! appsink";
+CSICam::CSICam() : SimpleCVCam() {
+    std::string default_pipeline = get_cam_pipeline(IMAGE_WIDTH, IMAGE_HEIGHT, 120, true, false);
     cap = VideoCapture(default_pipeline.c_str());
+    start();
 }
 
-CSICam::CSICam(char *pipeline) {
+CSICam::CSICam(char *pipeline) : SimpleCVCam() {
     cap = VideoCapture(pipeline);
     start();
 }
 
 /* -------------------------- OV5693Cam ----------------------- */
 OV5693Cam::OV5693Cam() : CSICam() {
-    std::string DEFAULT_I2C_ = "/dev/i2c-6";
-    i2c_init(DEFAULT_I2C_.c_str());
+    std::string DEFAULT_I2C_ = "/dev/i2c-2";
+    if (!i2c_init(DEFAULT_I2C_.c_str()))
+        std::cerr << "I2C init failed! Continuing anyway...";
 }
 
 OV5693Cam::OV5693Cam(char *pipeline, char *i2c_file) : CSICam(pipeline) {
-    i2c_init(i2c_file);
+    if(!i2c_init(i2c_file))
+        std::cerr << "I2C init failed! Continuing anyway...";
 }
 
 bool OV5693Cam::i2c_init(const char *i2c_file) {
     int file;
+    bool ret = true;
 
     if ((file = open(i2c_file, O_RDWR)) < 0) {
         std::cerr << "cannot open i2c file " << i2c_file << std::endl;
@@ -88,11 +117,11 @@ bool OV5693Cam::i2c_init(const char *i2c_file) {
 
     i2c_fd = file;
 
-    i2c_write(VCM_MOVE_TIME, 0x43);
-    i2c_write(VCM_MODE, 0x00);
-    set_focus(default_focus);
+    ret = ret && i2c_write(VCM_MOVE_TIME, 0x43);
+    ret = ret && i2c_write(VCM_MODE, 0x00);
+    ret = ret && set_focus(default_focus);
 
-    return true;
+    return ret;
 }
 
 bool OV5693Cam::i2c_write(uint8_t cmd, uint8_t val) {
@@ -105,7 +134,6 @@ bool OV5693Cam::i2c_write(uint8_t cmd, uint8_t val) {
 }
 
 bool OV5693Cam::set_focus(uint16_t focus) {
-    i2c_write(VCM_CODE_MSB, 0x04 | (focus >> 8));
-    i2c_write(VCM_CODE_LSB, focus & 0xff);
-    return true;
+    return i2c_write(VCM_CODE_MSB, 0x04 | (focus >> 8)) &&
+        i2c_write(VCM_CODE_LSB, focus & 0xff);
 }
