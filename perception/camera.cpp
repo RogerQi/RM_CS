@@ -5,15 +5,13 @@
 #include <iostream>
 #include <string>
 
-/* ---------------------------- CameraBase ---------------------------*/
-
 std::string get_cam_pipeline(int width, int height, int fps, bool flip, bool auto_exposure) {
     int flip_ = 0;
     if (flip)
         flip_ = 2;
     std::string cam_ctl_command = "";
     if (!auto_exposure) {
-        cam_ctl_command += "auto-exposure=1 exposure-time=0.15 aeLock=true";
+        cam_ctl_command += "auto-exposure=1 exposure-time=0.0001";
     }
     return "nvcamerasrc " + cam_ctl_command +
         " ! video/x-raw(memory:NVMM), width=(int)" +
@@ -23,34 +21,35 @@ std::string get_cam_pipeline(int width, int height, int fps, bool flip, bool aut
         " ! video/x-raw, format=(string)BGRx ! videoconvert ! video/x-raw, format=(string)BGR ! appsink";
 }
 
+/* ---------------------------- CameraBase ---------------------------*/
+
 CameraBase::CameraBase() {
-    _buffer.resize(2);
-    _write_index = 0;
-    _read_index = 1;
+    this->_buffer.resize(2);
+    this->_write_index = 0;
+    this->_read_index = 1;
 }
 
 void CameraBase::set_img(unsigned int sleep) {
     while (true) {
-        _buffer[_write_index] = cam_read();
-        _lock.lock();
-        unsigned short tmp_index;
-        tmp_index = _write_index;
-        _write_index = _read_index;
-        _read_index = tmp_index;
-        _lock.unlock();
+        this->_buffer[_write_index] = cam_read();
+        this->_lock.lock();
+        unsigned short tmp_index = _write_index;
+        this->_write_index = _read_index;
+        this->_read_index = tmp_index;
+        this->_lock.unlock();
         if (sleep)
             std::this_thread::sleep_for(std::chrono::milliseconds(sleep));
     }
 }
 
 void CameraBase::get_img(Mat &dst) {
-    _lock.lock();
-    _buffer.at(_read_index).copyTo(dst);
-    _lock.unlock();
+    this->_lock.lock();
+    this->_buffer.at(this->_read_index).copyTo(dst);
+    this->_lock.unlock();
 }
 
 void CameraBase::start() {
-    _buffer[_read_index] = cam_read();
+    this->_buffer[_read_index] = cam_read();
     std::thread t(&CameraBase::set_img, this, 0);
     t.detach();
 }
@@ -79,7 +78,7 @@ Mat SimpleCVCam::cam_read() {
 /* ---------------------------- CSICam ---------------------------*/
 
 CSICam::CSICam() : SimpleCVCam() {
-    std::string default_pipeline = get_cam_pipeline(IMAGE_WIDTH, IMAGE_HEIGHT, 120, true, false);
+    std::string default_pipeline = get_cam_pipeline(IMAGE_WIDTH, IMAGE_HEIGHT, 120, false, false);
     cap = VideoCapture(default_pipeline.c_str());
     start();
 }

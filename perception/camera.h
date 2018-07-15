@@ -131,7 +131,7 @@ private:
     bool    i2c_write(uint8_t cmd, uint8_t val);
 
     int i2c_fd = -1;
-    static const uint16_t   default_focus   = 100;
+    static const uint16_t   default_focus   = 275;
     static const uint16_t   ad5823_addr     = 0x0c;
     static const uint8_t    VCM_MOVE_TIME   = 0x03;
     static const uint8_t    VCM_MODE        = 0x02;
