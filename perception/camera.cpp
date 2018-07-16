@@ -78,7 +78,7 @@ Mat SimpleCVCam::cam_read() {
 /* ---------------------------- CSICam ---------------------------*/
 
 CSICam::CSICam() : SimpleCVCam() {
-    std::string default_pipeline = get_cam_pipeline(IMAGE_WIDTH, IMAGE_HEIGHT, 120, false, false);
+    std::string default_pipeline = get_cam_pipeline(IMAGE_WIDTH, IMAGE_HEIGHT, 120, true, false);
     cap = VideoCapture(default_pipeline.c_str());
     start();
 }

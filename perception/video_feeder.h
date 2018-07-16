@@ -18,7 +18,7 @@ public:
         alive = true;
         cap = VideoCapture(video_file_name);
         cap >> next_frame; // read first frame for init.
-        //start();
+        // start();
     }
 
     Mat cam_read() {

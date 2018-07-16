@@ -21,6 +21,10 @@ public:
         return time_elapsed.count();
     }
 
+    std::chrono::high_resolution_clock::time_point get_cur_time(void) {
+        return std::chrono::high_resolution_clock::now();
+    }
+
 private:
     std::chrono::high_resolution_clock::time_point start_time;
     std::chrono::high_resolution_clock::time_point cur_time;
