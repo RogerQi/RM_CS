@@ -152,7 +152,7 @@ void Protocol::process_body() {
             break;
         case AIM_REQUEST:
             if (_rx_body->aim_request.mode == RUNE) {
-
+                // TODO: not implemented
             }
             else if (_rx_body->aim_request.mode == AUTOAIM) {
                 _tx_body->gimbal_control.command_id = GIMBAL_CONTROL;
@@ -163,6 +163,10 @@ void Protocol::process_body() {
             }
             else
                 cout << "Body data meaningless!" << endl;
+            break;
+        case FOUR_INT16:
+            _tx_body->idle_msg.command_id = IDLE_MSG;
+            cout << _rx_body->custom_int16s.x << endl;
             break;
         default:
             cout << "Message Not Implemented Yet!" << endl;

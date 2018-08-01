@@ -3,7 +3,6 @@
 video_saver::video_saver(CameraBase *_cam, unsigned int interval_ms) {
     this->my_cam = _cam;
     this->sleep_ms = interval_ms;
-    this->start();
 }
 
 video_saver::~video_saver() {

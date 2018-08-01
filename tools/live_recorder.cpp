@@ -4,11 +4,21 @@
 #include <thread>
 #include <chrono>
 
-int main(void) {
-    OV5693Cam *tx2_cam = new OV5693Cam();
-    video_saver my_saver(tx2_cam, 500);
+void record_loop() {
+    SimpleCVCam *cam = new SimpleCVCam(0);
+    video_saver my_saver(cam, 500);
+
     while (true) {
-        // two threads should already be working now
-        std::this_thread::sleep_for(std::chrono::seconds(5));
+        my_saver.save_image();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 }
+
+int main(void) {
+    std::thread t(record_loop);
+    t.detach();
+
+    while (true)
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+}
+

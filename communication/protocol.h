@@ -6,7 +6,7 @@
 #include <chrono>
 
 #define MAX_BUFFER_LENGTH   30
-#define PROTOCOL_SLEEP_TIME 10 // in ms
+#define PROTOCOL_SLEEP_TIME 1 // in ms
 #define TX2_SOF             0xA0
 
 #define LEN_CRC8            1
@@ -78,11 +78,12 @@ static constexpr uint8_t crc8_table[256] = {
 };
 
 typedef enum {
-    GIMBAL_CONTROL = 0x00A1,
+    GIMBAL_CONTROL  = 0x00A1,
 
-    IDLE_MSG = 0x0000,
-    AIM_REQUEST = 0x0012,
+    IDLE_MSG        = 0x0000,
+    AIM_REQUEST     = 0x0012,
 
+    FOUR_INT16      = 0x00F0,
 } command_id_e;
 
 typedef enum {
@@ -115,11 +116,22 @@ typedef struct {
     uint16_t     crc16;
 } __attribute__((packed)) gimbal_control_t;
 
+typedef struct {
+    uint16_t    command_id;
+    int16_t     x;
+    int16_t     y;
+    int16_t     z;
+    int16_t     w;
+    uint16_t    crc16;
+} __attribute__((packed)) four_int16_t;
+
 typedef union {
     gimbal_control_t    gimbal_control;
 
     idle_msg_t          idle_msg;
     aim_request_t       aim_request;
+
+    four_int16_t        custom_int16s;
 }   data_u;
 
 class Protocol {
