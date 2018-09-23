@@ -8,6 +8,7 @@ The system image we used in this tutorial can be downloaded [here](http://mirror
 There are some newer releases of libraries we used in this project. However, in this tutorial, we will use the older release for the sake of compatibility.
 
 **1. Before we start...**
+
 Install essential building tools,
 ```
 sudo apt-get update
@@ -19,6 +20,7 @@ mkdir dep && cd dep
 ```
 
 **2. Install CUDA 9.0**
+
 A thing to note here is that we are going to use dpkg to install **INSTEAD OF** .tar/.run throughout the tutorial. Also, this is a **CUDA 9.0** but not a more recent version of CUDA. The reason why we want this is that it will provide us with a better management of the packages and may avoid potential dependency/compatibility issue(s).
 
 Get the relevant dpkg through whatever means you like (browser/terminal/or copy/pasting...). The CUDA package we used here is downloaded from [here](https://developer.nvidia.com/compute/cuda/9.0/Prod/local_installers/cuda-repo-ubuntu1604-9-0-local_9.0.176-1_amd64-deb). After finishing, go into the directory in which it is stored, and run,
@@ -56,6 +58,7 @@ sudo dpkg -i libcudnn7_7.3.0.29-1+cuda9.0_amd64.deb (or whatever filename your d
 and you should be all set with cuDNN.
 
 **4. Install PyCUDA**
+
 Next, we are going to install PyCUDA. This is an unncessary step and you can skip this step if you are planning to do all the development work with C++. However since we do use Python for PoC and iterations, it's recommended to have PyCUDA installed.
 
 First, setup the python environment,
@@ -95,6 +98,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 If the module is imported without throwing any exception, then it is properly installed.
 
 **6. Install OpenCV**
+
 This is probably the longest and most painful step. Before following the instruction below, make sure you have all packages from the previous sections properly installed. First, install some relevant packages,
 ```
 sudo apt-get install \
@@ -174,6 +178,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 
 **7. Try and if you can compile the repo! **
 Get this repo from github by running,
+
 ```
 git clone git://github.com/alvinsunyixiao/RM_CS.git
 ```
@@ -187,7 +192,8 @@ make -j6
 The above commands should complete without raising any error.
 
 **8. FAQ**
-**When the package was trying to setup NVIDIA driver, it throws an exception that says it's compatible with nouveau driver which is currently running**
+
+*1. When the package was trying to setup NVIDIA driver, it throws an exception that says it's compatible with nouveau driver which is currently running*
 Disable nouveau driver because it's incompatible with Nvidia driver, which we have to install. (According to [CUDA installation Guide](http://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#pre-installation-actions))
 ```
 sudo touch /etc/modprobe.d/blacklist-nouveau.conf
