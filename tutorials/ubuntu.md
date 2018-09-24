@@ -118,6 +118,10 @@ sudo apt-get install \
     libgtk2.0-dev \
     pkg-config
 ```
+To enable gstreamer support for camera, you also need to run,
+```
+sudo apt-get install libgstreamer1.0-0 gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-doc gstreamer1.0-tools libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev
+```
 Now, get OpenCV from [here](https://github.com/opencv/opencv/archive/3.4.2.zip). After downloading, run,
 ```
 unzip 3.4.2.zip
@@ -148,7 +152,7 @@ cmake \
     -DWITH_CUDA=ON \
     -DWITH_GTK=ON \
     -DWITH_VTK=OFF \
-    -DWITH_TBB=ON \
+    -DWITH_TBB=OFF \
     -DWITH_1394=OFF \
     -DWITH_OPENEXR=OFF \
     -DCUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda-9.0 \
