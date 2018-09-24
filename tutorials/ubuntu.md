@@ -25,7 +25,7 @@ A thing to note here is that we are going to use dpkg to install **INSTEAD OF** 
 
 Get the relevant dpkg through whatever means you like (browser/terminal/or copy/pasting...). The CUDA package we used here is downloaded from [here](https://developer.nvidia.com/compute/cuda/9.0/Prod/local_installers/cuda-repo-ubuntu1604-9-0-local_9.0.176-1_amd64-deb). After finishing, go into the directory in which it is stored, and run,
 ```
-sudo dpkg -i icuda-repo-ubuntu1804-10-0-local-10.0.130-410.48_1.0-1_amd64
+sudo dpkg -i cuda-repo-ubuntu1604-9-0-local_9.0.176-1_amd64-deb (this is the filename I got on my machine.)
 ```
 
 (Optional:) In some cases, it may give you a warning that the GPG key is not installed.
