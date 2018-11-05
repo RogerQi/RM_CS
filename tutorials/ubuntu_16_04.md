@@ -88,11 +88,11 @@ sudo pip install uff-converter-tf python3-libnvinfer
 ```
 To test it,
 ```
-Python 3.6.4 (default, Mar  9 2018, 23:15:03) 
+Python 3.6.4 (default, Mar  9 2018, 23:15:03)
 [GCC 4.2.1 Compatible Apple LLVM 9.0.0 (clang-900.0.39.2)] on darwin
 Type "help", "copyright", "credits" or "license" for more information.
 >>> import tensorrt
->>> 
+>>>
 ```
 
 If the module is imported without throwing any exception, then it is properly installed.
@@ -171,20 +171,20 @@ sudo make install
 ```
 To see if it have been properly installed, you can try,
 ```
-Python 3.6.4 (default, Mar  9 2018, 23:15:03) 
+Python 3.6.4 (default, Mar  9 2018, 23:15:03)
 [GCC 4.2.1 Compatible Apple LLVM 9.0.0 (clang-900.0.39.2)] on darwin
 Type "help", "copyright", "credits" or "license" for more information.
 >>> import cv2
 >>> print(cv2.__version__)
 3.4.2
->>> 
+>>>
 ```
 
 **7. Try and if you can compile the repo! **
 Get this repo from github by running,
 
 ```
-git clone git://github.com/alvinsunyixiao/RM_CS.git
+git clone git://github.com/RogerQi/RM_CS.git
 ```
 Build it with default configuration,
 ```
