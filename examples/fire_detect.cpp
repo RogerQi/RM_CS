@@ -9,17 +9,14 @@ int main(void) {
     int code = cv::VideoWriter::fourcc('M', 'J', 'P', 'G');
     cv::VideoWriter save_stream("fire_rune_detect.avi", code, 30, Size(IMAGE_WIDTH, IMAGE_HEIGHT));
     perception::rune_bot rune_getter(cam);
-    while (cam->is_alive()) {
-        
-    }
-    /*
     rune_getter.cam_update();
     vector<digit_t> fire_digits = rune_getter.fire_acquire_digits();
     vector<digit_t> red_digits;
     bool detected_ = false;
     while (cam->is_alive()) {
         rune_getter.cam_update();
-        vector<digit_t> fire_digits;
+        vector<digit_t> fire_digits = rune_getter.fire_acquire_digits();
+        /*
         if (detected_) {
             fire_digits = rune_getter.recognize_large_digits();
         } else {
@@ -30,6 +27,7 @@ int main(void) {
                 detected_ = false;
             }
         }
+        */
         Mat cur_frame;
         rune_getter.get_cur_frame().download(cur_frame);
         vector<vector<Point> > ctrs;
@@ -42,7 +40,6 @@ int main(void) {
         cv::drawContours(cur_frame, ctrs, -1, cv::Scalar(255, 0, 0), 3);
         save_stream << cur_frame;
     }
-    */
     save_stream.release();
     return 0;
 }
