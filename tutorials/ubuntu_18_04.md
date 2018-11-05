@@ -184,12 +184,13 @@ sudo make install
 ```
 To see if it have been properly installed, you can try,
 ```
-Python 3.6.4 (default, Mar  9 2018, 23:15:03)
-[GCC 4.2.1 Compatible Apple LLVM 9.0.0 (clang-900.0.39.2)] on darwin
+roger@workstation:~/Downloads/opencv-3.4.3/build$ python3
+Python 3.6.6 (default, Sep 12 2018, 18:26:19)
+[GCC 8.0.1 20180414 (experimental) [trunk revision 259383]] on linux
 Type "help", "copyright", "credits" or "license" for more information.
 >>> import cv2
->>> print(cv2.__version__)
-3.4.2
+>>> cv2.__version__
+'3.4.3'
 >>>
 ```
 
