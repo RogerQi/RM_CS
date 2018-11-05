@@ -199,7 +199,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 Get this repo from github by running,
 
 ```
-git clone git://github.com/RogerQi/RM_CS.git
+git clone https://github.com/RogerQi/RM_CS.git
 ```
 Build it with default configuration,
 ```

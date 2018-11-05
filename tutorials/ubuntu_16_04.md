@@ -180,11 +180,12 @@ Type "help", "copyright", "credits" or "license" for more information.
 >>>
 ```
 
-**7. Try and if you can compile the repo! **
+**7. Try and if you can compile the repo!**
+
 Get this repo from github by running,
 
 ```
-git clone git://github.com/RogerQi/RM_CS.git
+git clone https://github.com/RogerQi/RM_CS.git
 ```
 Build it with default configuration,
 ```
