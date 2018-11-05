@@ -187,7 +187,42 @@ Get this repo from github by running,
 ```
 git clone https://github.com/RogerQi/RM_CS.git
 ```
-Build it with default configuration,
+
+Before we start compiling, we need to let the program know the Architecture and Compute Capability of your GPU.
+To do this, refer to the page [Nvidia CUDA GPUs](https://developer.nvidia.com/cuda-gpus). For example, I got a
+GeForce GTX 1060 on my PC, so I looked for it under CUDA-Enabled GeForce Products and found out it had
+a compute capability of 6.1.
+
+Now go to RM_CS/tensorrt. You should see a CMakeLists.txt. Around Line 21 you should see something like this
+```
+set(
+	CUDA_NVCC_FLAGS
+	${CUDA_NVCC_FLAGS};
+    -O3
+	-gencode arch=compute_53,code=sm_53
+	-gencode arch=compute_62,code=sm_62
+)
+```
+
+Change it to be like this
+```
+set(
+	CUDA_NVCC_FLAGS
+	${CUDA_NVCC_FLAGS};
+    -O3
+	-gencode arch=compute_61,code=sm_61
+)
+```
+
+Note that I use
+
+```
+-gencode arch=compute_61,code=sm_61
+```
+
+because the compute capability of my GPU is 6.1. You are likely to have a different GPU!
+
+Now, build it with default configuration,
 ```
 cd RM_CS
 mkdir build && cd build
