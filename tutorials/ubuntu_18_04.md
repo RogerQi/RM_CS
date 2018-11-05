@@ -136,10 +136,10 @@ To enable gstreamer support for camera (both you own WebCAM or on-board CSI came
 ```
 sudo apt-get install libgstreamer1.0-0 gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-doc gstreamer1.0-tools libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev
 ```
-Now, get OpenCV from [here](https://github.com/opencv/opencv/archive/3.4.2.zip). After downloading, run,
+Now, get OpenCV from [here](https://github.com/opencv/opencv/archive/3.4.3.zip). After downloading, run,
 ```
-unzip 3.4.2.zip
-cd opencv-3.4.2
+unzip 3.4.3.zip
+cd opencv-3.4.3
 mkdir build && cd build
 ```
 Configure our build,
@@ -237,7 +237,7 @@ Note that I use
 -gencode arch=compute_61,code=sm_61
 ```
 
-because the compute capability of my GPU is 6.1. You are likely to have a different GPU!
+because the compute capability of my GPU is 6.1 (6.1 -> 61). You are likely to have a different GPU!
 
 Now, build it with default configuration,
 ```
